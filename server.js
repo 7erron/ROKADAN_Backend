@@ -10,7 +10,8 @@ pool.query('SELECT NOW()', (err, res) => {
   } else {
     console.log('Conexión a PostgreSQL exitosa:', res.rows[0]);
     // Iniciar servidor solo si la conexión a la DB es exitosa
-    app.listen(PORT, () => {
+    app.listen(PORT, '0.0.0.0', () => {  
+      // Añade '0.0.0.0' para escuchar en todas las interfaces
       console.log(`Servidor corriendo en http://localhost:${PORT}`);
     });
   }
