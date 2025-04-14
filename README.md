@@ -83,6 +83,9 @@ VALUES
   ('Piscina', 'Acceso a piscina climatizada.', 10000),
   ('Chimenea', 'Chimenea interior para noches frías.', 8000);
 
+-- Ampliar caracteres
+ALTER TABLE cabanas ALTER COLUMN imagen TYPE text;
+
   -- Actualizar imágenes para las cabañas existentes
 UPDATE cabanas SET 
   imagen = 'https://img.freepik.com/fotos-premium/cabana-ubicada-bosque-vistas-majestuosas-montanas-vista-panoramica-cabana-acogedora-ubicada-montanas-vista-panoramica_538213-117682.jpg?w=996'
