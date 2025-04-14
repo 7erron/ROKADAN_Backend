@@ -1,4 +1,4 @@
-const Cabana = require('../models/Cabana');
+const Cabana = require('../models/Cabaña');
 const { validationResult } = require('express-validator');
 
 exports.obtenerCabanas = async (req, res) => {

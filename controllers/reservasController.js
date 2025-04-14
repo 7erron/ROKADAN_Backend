@@ -1,5 +1,5 @@
 const Reserva = require('../models/Reserva');
-const Cabana = require('../models/Cabana');
+const Cabana = require('../models/Cabaña');
 const Servicio = require('../models/Servicio');
 const { validationResult } = require('express-validator');
 
