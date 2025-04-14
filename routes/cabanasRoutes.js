@@ -5,23 +5,17 @@ const { auth, restrictToAdmin } = require('../middlewares/auth');
 const { validarCabana, validarId } = require('../middlewares/validators');
 const { validarDisponibilidad } = require('../middlewares/validators');
 
-router
-  .route('/')
-  .get(cabanasController.obtenerCabanas)
-  .post(auth, restrictToAdmin, validarCabana, cabanasController.crearCabana);
+// Rutas públicas
+router.get('/', cabanasController.obtenerCabanas);
+router.get('/destacadas', cabanasController.obtenerCabanasDestacadas);
+router.get('/disponibles', validarDisponibilidad, cabanasController.obtenerCabanasDisponibles);
+router.get('/:id', validarId, cabanasController.obtenerCabana);
 
-router
-  .route('/destacadas')
-  .get(cabanasController.obtenerCabanasDestacadas);
+// Rutas protegidas (requieren autenticación y ser admin)
+router.use(auth, restrictToAdmin);
 
-router
-  .route('/disponibles')
-  .get(validarDisponibilidad, cabanasController.obtenerCabanasDisponibles);
-
-router
-  .route('/:id')
-  .get(validarId, cabanasController.obtenerCabana)
-  .patch(auth, restrictToAdmin, validarId, validarCabana, cabanasController.actualizarCabana)
-  .delete(auth, restrictToAdmin, validarId, cabanasController.eliminarCabana);
+router.post('/', validarCabana, cabanasController.crearCabana);
+router.patch('/:id', validarId, validarCabana, cabanasController.actualizarCabana);
+router.delete('/:id', validarId, cabanasController.eliminarCabana);
 
 module.exports = router;
