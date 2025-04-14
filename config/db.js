@@ -1,21 +1,33 @@
 const { Pool } = require("pg");
 require("dotenv").config();
-const pool = new Pool({
+
+// Configuración mejorada con manejo explícito
+const poolConfig = {
   host: process.env.DB_HOST,
   user: process.env.DB_USER,
-  password: process.env.DB_PASS,
+  password: process.env.DB_PASSWORD, // Asegúrate que coincide con Render
   database: process.env.DB_NAME,
-  port: process.env.DB_PORT, // Asegúrate de tener esto si usás un puerto distinto
-  ssl: {
-    rejectUnauthorized: false, // 👈 Necesario para Render
-  },
-  allowExitOnIdle: true,
-});
-pool
-  .connect()
-  .then(() => console.log("✅ Conectado a la base de datos"))
-  .catch((err) => {
-    console.error("❌ Error al conectar con la base de datos:", err.message);
-    process.exit(1);
-  });
+  port: process.env.DB_PORT,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 5000
+};
+
+const pool = new Pool(poolConfig);
+
+// Verificación activa de conexión
+const testConnection = async () => {
+  try {
+    const client = await pool.connect();
+    console.log("✅ Conexión a PostgreSQL exitosa");
+    client.release();
+  } catch (err) {
+    console.error("❌ Error de conexión a PostgreSQL:", err.message);
+    process.exit(1); // Detener la app si no hay conexión
+  }
+};
+
+// Ejecutar inmediatamente
+testConnection();
+
 module.exports = pool;
