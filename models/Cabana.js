@@ -1,19 +1,35 @@
 const pool = require('../config/db');
 
 class Cabana {
+  // Verificador de conexión reutilizable
+  static async _checkConnection() {
+    if (!pool || typeof pool.query !== 'function') {
+      throw new Error('Pool de conexiones no está disponible');
+    }
+
+    try {
+      await pool.query('SELECT 1'); // Consulta de prueba
+    } catch (err) {
+      console.error('Error de conexión a la DB:', err);
+      throw new Error('Error al conectar con la base de datos');
+    }
+  }
+
   static async findAll() {
     try {
+      await this._checkConnection();
+      
       const { rows } = await pool.query(`
-        SELECT id, nombre, descripcion, precio, capacidad, imagen, disponible, 
-               creado_en, actualizado_en
+        SELECT *, 
+        CASE WHEN imagen IS NULL OR imagen = '' 
+          THEN 'https://via.placeholder.com/800x600?text=Imagen+no+disponible'
+          ELSE imagen
+        END AS imagen
         FROM cabanas 
         WHERE disponible = true
       `);
       
-      return rows.map(row => ({
-        ...row,
-        imagen: row.imagen || 'https://via.placeholder.com/800x600?text=Imagen+no+disponible'
-      }));
+      return rows;
     } catch (error) {
       console.error('Error en Cabana.findAll:', error);
       throw error;
@@ -22,19 +38,18 @@ class Cabana {
 
   static async findById(id) {
     try {
-      const { rows } = await pool.query(`
-        SELECT id, nombre, descripcion, precio, capacidad, imagen, disponible,
-               creado_en, actualizado_en
+      await this._checkConnection();
+      
+      const { rows } = await pool.query(
+        `SELECT *,
+        COALESCE(imagen, 'https://via.placeholder.com/800x600?text=Imagen+no+disponible') AS imagen
         FROM cabanas 
-        WHERE id = $1
-      `, [id]);
+        WHERE id = $1`,
+        [id]
+      );
       
       if (rows.length === 0) return null;
-      
-      return {
-        ...rows[0],
-        imagen: rows[0].imagen || 'https://via.placeholder.com/800x600?text=Imagen+no+disponible'
-      };
+      return rows[0];
     } catch (error) {
       console.error('Error en Cabana.findById:', error);
       throw error;
@@ -43,19 +58,19 @@ class Cabana {
 
   static async findDestacadas() {
     try {
+      await this._checkConnection();
+      
       const { rows } = await pool.query(`
-        SELECT id, nombre, descripcion, precio, capacidad, imagen, disponible,
-               creado_en, actualizado_en
+        SELECT *,
+        COALESCE(imagen, 'https://via.placeholder.com/800x600?text=Imagen+no+disponible') AS imagen
         FROM cabanas 
         WHERE disponible = true 
+        AND destacada = true
         ORDER BY creado_en DESC 
         LIMIT 2
       `);
       
-      return rows.map(row => ({
-        ...row,
-        imagen: row.imagen || 'https://via.placeholder.com/800x600?text=Imagen+no+disponible'
-      }));
+      return rows;
     } catch (error) {
       console.error('Error en Cabana.findDestacadas:', error);
       throw error;
@@ -64,11 +79,13 @@ class Cabana {
 
   static async findDisponibles(fechaInicio, fechaFin, adultos = 1, ninos = 0) {
     try {
+      await this._checkConnection();
+      
       const capacidadTotal = parseInt(adultos) + parseInt(ninos);
       
-      const { rows } = await pool.query(`
-        SELECT c.id, c.nombre, c.descripcion, c.precio, c.capacidad, c.imagen,
-               c.disponible, c.creado_en, c.actualizado_en
+      const { rows } = await pool.query(
+        `SELECT c.*,
+        COALESCE(c.imagen, 'https://via.placeholder.com/800x600?text=Imagen+no+disponible') AS imagen
         FROM cabanas c
         WHERE c.disponible = true
         AND c.capacidad >= $1
@@ -81,13 +98,11 @@ class Cabana {
             (r.fecha_inicio <= $3 AND r.fecha_fin >= $3) OR
             (r.fecha_inicio >= $2 AND r.fecha_fin <= $3)
           )
-        )
-      `, [capacidadTotal, fechaInicio, fechaFin]);
+        )`,
+        [capacidadTotal, fechaInicio, fechaFin]
+      );
       
-      return rows.map(row => ({
-        ...row,
-        imagen: row.imagen || 'https://via.placeholder.com/800x600?text=Imagen+no+disponible'
-      }));
+      return rows;
     } catch (error) {
       console.error('Error en Cabana.findDisponibles:', error);
       throw error;
@@ -96,20 +111,22 @@ class Cabana {
 
   static async create(cabanaData) {
     try {
-      const { rows } = await pool.query(`
-        INSERT INTO cabanas (
-          nombre, descripcion, precio, capacidad, imagen, disponible
+      await this._checkConnection();
+      
+      const { rows } = await pool.query(
+        `INSERT INTO cabanas (
+          nombre, descripcion, precio, capacidad, imagen, destacada
         ) VALUES ($1, $2, $3, $4, $5, $6)
-        RETURNING id, nombre, descripcion, precio, capacidad, imagen, disponible,
-                  creado_en, actualizado_en
-      `, [
-        cabanaData.nombre,
-        cabanaData.descripcion,
-        cabanaData.precio,
-        cabanaData.capacidad,
-        cabanaData.imagen || 'https://via.placeholder.com/800x600?text=Imagen+no+disponible',
-        cabanaData.disponible !== false
-      ]);
+        RETURNING *`,
+        [
+          cabanaData.nombre,
+          cabanaData.descripcion,
+          cabanaData.precio,
+          cabanaData.capacidad,
+          cabanaData.imagen || null,
+          cabanaData.destacada || false
+        ]
+      );
       
       return rows[0];
     } catch (error) {
@@ -120,27 +137,32 @@ class Cabana {
 
   static async update(id, cabanaData) {
     try {
-      const { rows } = await pool.query(`
-        UPDATE cabanas
-        SET nombre = $1, 
-            descripcion = $2, 
-            precio = $3, 
-            capacidad = $4, 
-            imagen = $5, 
-            disponible = $6, 
-            actualizado_en = NOW()
-        WHERE id = $7
-        RETURNING id, nombre, descripcion, precio, capacidad, imagen, disponible,
-                  creado_en, actualizado_en
-      `, [
-        cabanaData.nombre,
-        cabanaData.descripcion,
-        cabanaData.precio,
-        cabanaData.capacidad,
-        cabanaData.imagen || 'https://via.placeholder.com/800x600?text=Imagen+no+disponible',
-        cabanaData.disponible !== false,
-        id
-      ]);
+      await this._checkConnection();
+      
+      const { rows } = await pool.query(
+        `UPDATE cabanas
+        SET 
+          nombre = $1,
+          descripcion = $2,
+          precio = $3,
+          capacidad = $4,
+          imagen = $5,
+          destacada = $6,
+          disponible = $7,
+          actualizado_en = NOW()
+        WHERE id = $8
+        RETURNING *`,
+        [
+          cabanaData.nombre,
+          cabanaData.descripcion,
+          cabanaData.precio,
+          cabanaData.capacidad,
+          cabanaData.imagen || null,
+          cabanaData.destacada || false,
+          cabanaData.disponible !== false,
+          id
+        ]
+      );
       
       if (rows.length === 0) return null;
       return rows[0];
@@ -152,11 +174,12 @@ class Cabana {
 
   static async delete(id) {
     try {
-      const { rows } = await pool.query(`
-        DELETE FROM cabanas 
-        WHERE id = $1
-        RETURNING id, nombre
-      `, [id]);
+      await this._checkConnection();
+      
+      const { rows } = await pool.query(
+        'DELETE FROM cabanas WHERE id = $1 RETURNING *',
+        [id]
+      );
       
       if (rows.length === 0) return null;
       return rows[0];
