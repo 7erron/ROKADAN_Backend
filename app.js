@@ -8,7 +8,15 @@ const errorHandler = require('./middlewares/errorHandler');
 const app = express();
 
 // Middlewares
-app.use(cors());
+app.use(cors({
+    origin: [
+      process.env.CORS_ORIGIN || '*',
+      'https://rokadan.netlify.app', 
+      'http://localhost:5173'       
+    ],
+    methods: ['GET', 'POST', 'PATCH', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+  }));
 app.use(helmet());
 app.use(morgan('dev'));
 app.use(express.json());
