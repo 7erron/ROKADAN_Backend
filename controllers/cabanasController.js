@@ -1,4 +1,4 @@
-const Cabana = require('../models/Cabana');
+const Cabana = require('../models/Cabaña');
 const { validationResult } = require('express-validator');
 
 exports.obtenerCabanas = async (req, res) => {
@@ -7,12 +7,10 @@ exports.obtenerCabanas = async (req, res) => {
     res.status(200).json({
       status: 'success',
       results: cabanas.length,
-      data: {
-        cabanas
-      }
+      data: { cabanas }
     });
   } catch (error) {
-    console.error(error);
+    console.error('Error en obtenerCabanas:', error);
     res.status(500).json({
       status: 'error',
       message: 'Error al obtener las cabañas.'
@@ -36,7 +34,7 @@ exports.obtenerCabana = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error(error);
+    console.error('Error en obtenerCabana:', error);
     res.status(500).json({
       status: 'error',
       message: 'Error al obtener la cabaña.'
@@ -55,7 +53,7 @@ exports.obtenerCabanasDestacadas = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error(error);
+    console.error('Error en obtenerCabanasDestacadas:', error);
     res.status(500).json({
       status: 'error',
       message: 'Error al obtener cabañas destacadas.'
@@ -117,7 +115,7 @@ exports.crearCabana = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error(error);
+    console.error('Error en crearCabana:', error);
     res.status(500).json({
       status: 'error',
       message: 'Error al crear la cabaña.'
@@ -146,7 +144,7 @@ exports.actualizarCabana = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error(error);
+    console.error('Error en actualizarCabana:', error);
     res.status(500).json({
       status: 'error',
       message: 'Error al actualizar la cabaña.'
@@ -157,21 +155,34 @@ exports.actualizarCabana = async (req, res) => {
 exports.eliminarCabana = async (req, res) => {
   try {
     const cabana = await Cabana.delete(req.params.id);
+    
     if (!cabana) {
       return res.status(404).json({
         status: 'fail',
+<<<<<<< HEAD
         message: 'No se encontró la cabaña con ese ID.'
       });
     }
+=======
+        message: 'No se encontró la cabaña con ese ID'
+      });
+    }
+
+>>>>>>> 72833abbe9c6336dac1d345f179d9a64e205d330
     res.status(204).json({
       status: 'success',
       data: null
     });
   } catch (error) {
-    console.error(error);
+    console.error('Error en eliminarCabana:', error);
     res.status(500).json({
       status: 'error',
+<<<<<<< HEAD
       message: 'Error al eliminar la cabaña.'
+=======
+      message: 'Error al eliminar la cabaña',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+>>>>>>> 72833abbe9c6336dac1d345f179d9a64e205d330
     });
   }
 };
