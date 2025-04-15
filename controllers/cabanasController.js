@@ -4,12 +4,18 @@ const { validationResult } = require('express-validator');
 exports.obtenerCabanas = async (req, res) => {
   try {
     const cabanas = await Cabana.findAll();
-    res.status(200).json(cabanas);
+    res.status(200).json({
+      status: 'success',
+      results: cabanas.length,
+      data: {
+        cabanas
+      }
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({
-      error: 'Error al obtener las cabañas',
-      details: error.message
+      status: 'error',
+      message: 'Error al obtener las cabañas.'
     });
   }
 };
@@ -17,23 +23,23 @@ exports.obtenerCabanas = async (req, res) => {
 exports.obtenerCabana = async (req, res) => {
   try {
     const cabana = await Cabana.findById(req.params.id);
-    
     if (!cabana) {
       return res.status(404).json({
-        error: 'No se encontró la cabaña con ese ID'
+        status: 'fail',
+        message: 'No se encontró la cabaña con ese ID.'
       });
     }
-
-    if (!cabana.imagen) {
-      cabana.imagen = 'https://via.placeholder.com/800x600?text=Imagen+no+disponible';
-    }
-
-    res.status(200).json(cabana);
+    res.status(200).json({
+      status: 'success',
+      data: {
+        cabana
+      }
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({
-      error: 'Error al obtener la cabaña',
-      details: error.message
+      status: 'error',
+      message: 'Error al obtener la cabaña.'
     });
   }
 };
@@ -41,127 +47,109 @@ exports.obtenerCabana = async (req, res) => {
 exports.obtenerCabanasDestacadas = async (req, res) => {
   try {
     const cabanas = await Cabana.findDestacadas();
-    
-    const cabanasConImagen = cabanas.map(cabana => ({
-      ...cabana,
-      imagen: cabana.imagen || 'https://via.placeholder.com/800x600?text=Imagen+no+disponible'
-    }));
-    
-    res.status(200).json(cabanasConImagen);
+    res.status(200).json({
+      status: 'success',
+      results: cabanas.length,
+      data: {
+        cabanas
+      }
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({
-      error: 'Error al obtener cabañas destacadas',
-      details: error.message
+      status: 'error',
+      message: 'Error al obtener cabañas destacadas.'
     });
   }
 };
 
 exports.obtenerCabanasDisponibles = async (req, res) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
     const { fechaInicio, fechaFin, adultos, ninos } = req.query;
     
-    // Validaciones
     if (!fechaInicio || !fechaFin) {
       return res.status(400).json({
-        error: 'Debe proporcionar ambas fechas (inicio y fin)'
-      });
-    }
-
-    // Validar formato de fechas
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(fechaInicio) || !/^\d{4}-\d{2}-\d{2}$/.test(fechaFin)) {
-      return res.status(400).json({
-        error: 'Formato de fecha inválido. Use YYYY-MM-DD'
-      });
-    }
-
-    const inicio = new Date(fechaInicio);
-    const fin = new Date(fechaFin);
-    
-    if (inicio >= fin) {
-      return res.status(400).json({
-        error: 'La fecha de fin debe ser posterior a la fecha de inicio'
-      });
-    }
-
-    // Validar y convertir números
-    const adultosNum = parseInt(adultos);
-    const ninosNum = parseInt(ninos || 0);
-    
-    if (isNaN(adultosNum)) {
-      return res.status(400).json({
-        error: 'Número de adultos inválido'
-      });
-    }
-
-    if (isNaN(ninosNum)) {
-      return res.status(400).json({
-        error: 'Número de niños inválido'
+        status: 'fail',
+        message: 'Fechas de inicio y fin son requeridas'
       });
     }
 
     const cabanas = await Cabana.findDisponibles(
       fechaInicio,
       fechaFin,
-      adultosNum,
-      ninosNum
+      parseInt(adultos || 1),
+      parseInt(ninos || 0)
     );
     
-    const cabanasConImagen = cabanas.map(cabana => ({
-      ...cabana,
-      imagen: cabana.imagen || 'https://via.placeholder.com/800x600?text=Imagen+no+disponible'
-    }));
-    
-    res.status(200).json(cabanasConImagen);
+    res.status(200).json({
+      status: 'success',
+      results: cabanas.length,
+      data: {
+        cabanas
+      }
+    });
   } catch (error) {
-    console.error("Error en obtenerCabanasDisponibles:", error);
-    
-    if (error.code === '42725') {
-      return res.status(500).json({
-        error: 'Error en el servidor al procesar la búsqueda',
-        details: 'Problema con los tipos de datos en la consulta'
-      });
-    }
-    
+    console.error(error);
     res.status(500).json({
-      error: 'Error al buscar cabañas disponibles',
-      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      status: 'error',
+      message: 'Error al buscar cabañas disponibles.'
     });
   }
 };
 
 exports.crearCabana = async (req, res) => {
   try {
-    const datosCabana = {
-      ...req.body,
-      imagen: req.body.imagen || 'https://via.placeholder.com/800x600?text=Imagen+no+disponible'
-    };
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
 
-    const nuevaCabana = await Cabana.create(datosCabana);
-    res.status(201).json(nuevaCabana);
+    const nuevaCabana = await Cabana.create(req.body);
+    res.status(201).json({
+      status: 'success',
+      data: {
+        cabana: nuevaCabana
+      }
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({
-      error: 'Error al crear la cabaña',
-      details: error.message
+      status: 'error',
+      message: 'Error al crear la cabaña.'
     });
   }
 };
 
 exports.actualizarCabana = async (req, res) => {
   try {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+
     const cabana = await Cabana.update(req.params.id, req.body);
     if (!cabana) {
       return res.status(404).json({
-        error: 'No se encontró la cabaña con ese ID'
+        status: 'fail',
+        message: 'No se encontró la cabaña con ese ID.'
       });
     }
-    res.status(200).json(cabana);
+    res.status(200).json({
+      status: 'success',
+      data: {
+        cabana
+      }
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({
-      error: 'Error al actualizar la cabaña',
-      details: error.message
+      status: 'error',
+      message: 'Error al actualizar la cabaña.'
     });
   }
 };
@@ -171,15 +159,19 @@ exports.eliminarCabana = async (req, res) => {
     const cabana = await Cabana.delete(req.params.id);
     if (!cabana) {
       return res.status(404).json({
-        error: 'No se encontró la cabaña con ese ID'
+        status: 'fail',
+        message: 'No se encontró la cabaña con ese ID.'
       });
     }
-    res.status(204).json();
+    res.status(204).json({
+      status: 'success',
+      data: null
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({
-      error: 'Error al eliminar la cabaña',
-      details: error.message
+      status: 'error',
+      message: 'Error al eliminar la cabaña.'
     });
   }
 };

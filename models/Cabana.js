@@ -4,27 +4,13 @@ class Cabana {
   static async findAll() {
     const query = 'SELECT * FROM cabanas WHERE disponible = true';
     const { rows } = await pool.query(query);
-    
-    // Asegurar que todas las cabañas tengan imagen
-    return rows.map(row => ({
-      ...row,
-      imagen: row.imagen || 'https://via.placeholder.com/800x600?text=Imagen+no+disponible'
-    }));
+    return rows;
   }
 
   static async findById(id) {
     const query = 'SELECT * FROM cabanas WHERE id = $1';
     const { rows } = await pool.query(query, [id]);
-    
-    if (rows.length === 0) {
-      return null;
-    }
-    
-    // Asegurar que la cabaña tenga imagen
-    return {
-      ...rows[0],
-      imagen: rows[0].imagen || 'https://via.placeholder.com/800x600?text=Imagen+no+disponible'
-    };
+    return rows[0];
   }
 
   static async findDestacadas() {
@@ -35,52 +21,33 @@ class Cabana {
       LIMIT 2
     `;
     const { rows } = await pool.query(query);
-    
-    // Asegurar que las cabañas destacadas tengan imagen
-    return rows.map(row => ({
-      ...row,
-      imagen: row.imagen || 'https://via.placeholder.com/800x600?text=Imagen+no+disponible'
-    }));
+    return rows;
   }
 
   static async findDisponibles(fechaInicio, fechaFin, adultos, ninos) {
-    try {
-      // Convertir parámetros a tipos explícitos
-      adultos = parseInt(adultos) || 1;
-      ninos = parseInt(ninos) || 0;
-      const capacidadTotal = adultos + ninos;
-
-      const query = `
-        SELECT c.* 
-        FROM cabanas c
-        WHERE c.disponible = true
-        AND c.capacidad >= $1
-        AND c.id NOT IN (
-          SELECT r.cabana_id 
-          FROM reservas r
-          WHERE r.estado != 'cancelada'
-          AND (
-            (r.fecha_inicio <= $2::date AND r.fecha_fin >= $2::date) OR
-            (r.fecha_inicio <= $3::date AND r.fecha_fin >= $3::date) OR
-            (r.fecha_inicio >= $2::date AND r.fecha_fin <= $3::date)
-          )
+    const query = `
+      SELECT c.* 
+      FROM cabanas c
+      WHERE c.disponible = true
+      AND c.capacidad >= $1 + $2
+      AND c.id NOT IN (
+        SELECT r.cabana_id 
+        FROM reservas r
+        WHERE r.estado != 'cancelada'
+        AND (
+          (r.fecha_inicio <= $3 AND r.fecha_fin >= $3) OR
+          (r.fecha_inicio <= $4 AND r.fecha_fin >= $4) OR
+          (r.fecha_inicio >= $3 AND r.fecha_fin <= $4)
         )
-      `;
-      
-      const { rows } = await pool.query(query, [
-        capacidadTotal,
-        fechaInicio,
-        fechaFin
-      ]);
-      
-      return rows.map(row => ({
-        ...row,
-        imagen: row.imagen || 'https://via.placeholder.com/800x600?text=Imagen+no+disponible'
-      }));
-    } catch (error) {
-      console.error("Error en findDisponibles:", error);
-      throw error;
-    }
+      )
+    `;
+    const { rows } = await pool.query(query, [
+      adultos || 0,
+      ninos || 0,
+      fechaInicio,
+      fechaFin
+    ]);
+    return rows;
   }
 
   static async create({ nombre, descripcion, precio, capacidad, imagen }) {
@@ -89,13 +56,7 @@ class Cabana {
       VALUES ($1, $2, $3, $4, $5)
       RETURNING *
     `;
-    const values = [
-      nombre,
-      descripcion,
-      precio,
-      capacidad,
-      imagen || 'https://via.placeholder.com/800x600?text=Imagen+no+disponible'
-    ];
+    const values = [nombre, descripcion, precio, capacidad, imagen];
     const { rows } = await pool.query(query, values);
     return rows[0];
   }
@@ -107,15 +68,7 @@ class Cabana {
       WHERE id = $7
       RETURNING *
     `;
-    const values = [
-      nombre,
-      descripcion,
-      precio,
-      capacidad,
-      imagen || 'https://via.placeholder.com/800x600?text=Imagen+no+disponible',
-      disponible,
-      id
-    ];
+    const values = [nombre, descripcion, precio, capacidad, imagen, disponible, id];
     const { rows } = await pool.query(query, values);
     return rows[0];
   }

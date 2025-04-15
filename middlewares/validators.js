@@ -1,4 +1,4 @@
-const { body, param, query, validationResult } = require('express-validator');
+const { body, param, query } = require('express-validator');
 
 exports.validarRegistro = [
   body('nombre').trim().notEmpty().withMessage('El nombre es requerido'),
@@ -104,76 +104,28 @@ exports.validarId = [
 exports.validarDisponibilidad = [
   query('fechaInicio')
     .notEmpty().withMessage('La fecha de inicio es requerida')
-    .isISO8601().withMessage('Formato de fecha inválido (use YYYY-MM-DD)')
+    .isISO8601().withMessage('Formato de fecha inválido (YYYY-MM-DD)')
     .custom((value, { req }) => {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      const inputDate = new Date(value);
-      if (inputDate < today) {
-        throw new Error('No se pueden buscar fechas en el pasado');
+      if (new Date(value) < new Date()) {
+        throw new Error('La fecha de inicio no puede ser en el pasado');
       }
       return true;
-    })
-    .toDate(),
-
+    }),
   query('fechaFin')
     .notEmpty().withMessage('La fecha de fin es requerida')
-    .isISO8601().withMessage('Formato de fecha inválido (use YYYY-MM-DD)')
+    .isISO8601().withMessage('Formato de fecha inválido (YYYY-MM-DD)')
     .custom((value, { req }) => {
-      const startDate = new Date(req.query.fechaInicio);
-      const endDate = new Date(value);
-      
-      if (endDate <= startDate) {
+      if (new Date(value) <= new Date(req.query.fechaInicio)) {
         throw new Error('La fecha de fin debe ser posterior a la fecha de inicio');
       }
-      
-      const maxDays = 30;
-      const diffTime = Math.abs(endDate - startDate);
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      
-      if (diffDays > maxDays) {
-        throw new Error(`El período de búsqueda no puede exceder ${maxDays} días`);
-      }
-      
       return true;
-    })
-    .toDate(),
-
+    }),
   query('adultos')
     .optional()
-    .default(1)
-    .isInt({ min: 1, max: 10 }).withMessage('Debe haber entre 1 y 10 adultos')
+    .isInt({ min: 1 }).withMessage('Debe haber al menos 1 adulto')
     .toInt(),
-
   query('ninos')
     .optional()
-    .default(0)
-    .isInt({ min: 0, max: 10 }).withMessage('Máximo 10 niños permitidos')
-    .toInt(),
-
-  (req, res, next) => {
-    const errors = validationResult(req);
-    
-    if (!errors.isEmpty()) {
-      const formattedErrors = errors.array().map(err => ({
-        param: err.param,
-        message: err.msg,
-        value: err.value
-      }));
-      
-      return res.status(400).json({
-        status: 'fail',
-        message: 'Error de validación en los parámetros',
-        errors: formattedErrors
-      });
-    }
-    
-    req.query.fechaInicio = new Date(req.query.fechaInicio);
-    req.query.fechaFin = new Date(req.query.fechaFin);
-    req.query.adultos = parseInt(req.query.adultos || 1);
-    req.query.ninos = parseInt(req.query.ninos || 0);
-    
-    next();
-  }
+    .isInt({ min: 0 }).withMessage('El número de niños no puede ser negativo')
+    .toInt()
 ];
