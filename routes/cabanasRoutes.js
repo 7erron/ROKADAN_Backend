@@ -1,8 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const Servicio = require('../models/Servicio');
+const Cabana = require('../models/Cabana'); // Importar el modelo Cabana
 const { auth, restrictToAdmin } = require('../middlewares/auth');
 const { validarServicio, validarId } = require('../middlewares/validators');
+const cabanasController = require('../controllers/cabanasController');
 
 // Rutas públicas
 router.get('/destacadas', async (req, res) => {
