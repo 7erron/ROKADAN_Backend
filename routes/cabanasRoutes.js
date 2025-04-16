@@ -5,6 +5,32 @@ const { auth, restrictToAdmin } = require('../middlewares/auth');
 const { validarServicio, validarId } = require('../middlewares/validators');
 
 // Rutas públicas
+router.get('/destacadas', async (req, res) => {
+  try {
+    console.log('Solicitud recibida para /api/cabanas/destacadas'); // Log de depuración
+    const cabanas = await Cabana.findDestacadas();
+    
+    if (!cabanas || cabanas.length === 0) {
+      return res.status(404).json({ 
+        message: 'No se encontraron cabañas destacadas',
+        success: false
+      });
+    }
+    
+    res.json({
+      success: true,
+      count: cabanas.length,
+      data: cabanas
+    });
+    
+  } catch (error) {
+    console.error('Error en /api/cabanas/destacadas:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Error al obtener cabañas destacadas' 
+    });
+  }
+});
 router.get('/', async (req, res) => {
   try {
     const servicios = await Servicio.findAll();
