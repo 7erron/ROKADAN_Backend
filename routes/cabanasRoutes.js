@@ -1,142 +1,145 @@
 const express = require('express');
 const router = express.Router();
-const Servicio = require('../models/Servicio');
 const Cabana = require('../models/Cabana');
+const { pool } = require('../config/db');
 const { auth, restrictToAdmin } = require('../middlewares/auth');
-const { validarServicio, validarId } = require('../middlewares/validators');
+const { validarId } = require('../middlewares/validators');
+
+// Middleware para detectar solicitudes del frontend existente
+const detectLegacyFrontend = (req, res, next) => {
+  // Detecta si es una solicitud del frontend antiguo
+  req.isLegacyRequest = (
+    req.get('Accept') === 'application/json' && 
+    !req.get('Content-Type') && 
+    !req.query.legacy &&
+    !req.headers['x-requested-with']
+  );
+  next();
+};
+
+// Aplicar middleware a todas las rutas de cabañas
+router.use(detectLegacyFrontend);
 
 // Rutas públicas
 router.get('/destacadas', async (req, res) => {
   try {
     console.log('Solicitud recibida para /api/cabanas/destacadas');
+    
+    // Verificar conexión a la base de datos
+    await pool.query('SELECT NOW()');
+    
+    // Obtener cabañas destacadas
     const cabanas = await Cabana.findDestacadas();
     
-    // Versión moderna (con metadata)
-    const response = {
+    if (!cabanas || cabanas.length === 0) {
+      return res.status(404).json(req.isLegacyRequest ? 
+        [] : 
+        { success: false, message: 'No se encontraron cabañas destacadas' }
+      );
+    }
+
+    // Respuesta compatible con frontend antiguo y nuevo
+    res.json(req.isLegacyRequest ? cabanas : {
       success: true,
       count: cabanas.length,
       data: cabanas
-    };
-    
-    // ENVIAR AMBOS FORMATOS (compatibilidad)
-    if (req.query.legacy === 'true') {
-      return res.json(cabanas); // Formato antiguo
-    } else {
-      return res.json(response); // Formato nuevo
-    }
+    });
     
   } catch (error) {
     console.error('Error en /api/cabanas/destacadas:', error);
-    res.status(500).json({ 
-      success: false,
-      error: 'Error al obtener cabañas destacadas' 
-    });
+    res.status(500).json(req.isLegacyRequest ? 
+      [] : 
+      { success: false, error: 'Error al obtener cabañas destacadas' }
+    );
   }
 });
+
 router.get('/', async (req, res) => {
   try {
-    const servicios = await Servicio.findAll();
-    res.status(200).json({
-      status: 'success',
-      results: servicios.length,
-      data: {
-        servicios
-      }
+    const cabanas = await Cabana.findAll();
+    res.json(req.isLegacyRequest ? cabanas : {
+      success: true,
+      count: cabanas.length,
+      data: cabanas
     });
   } catch (error) {
-    console.error('Error al obtener servicios:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Error al obtener los servicios.'
-    });
+    console.error('Error al obtener cabañas:', error);
+    res.status(500).json(req.isLegacyRequest ? 
+      [] : 
+      { success: false, message: 'Error al obtener las cabañas' }
+    );
   }
 });
 
 router.get('/:id', validarId, async (req, res) => {
   try {
-    const servicio = await Servicio.findById(req.params.id);
-    if (!servicio) {
-      return res.status(404).json({
-        status: 'fail',
-        message: 'No se encontró el servicio con ese ID.'
-      });
+    const cabana = await Cabana.findById(req.params.id);
+    
+    if (!cabana) {
+      return res.status(404).json(req.isLegacyRequest ? 
+        null : 
+        { success: false, message: 'No se encontró la cabaña' }
+      );
     }
-    res.status(200).json({
-      status: 'success',
-      data: {
-        servicio
-      }
+
+    res.json(req.isLegacyRequest ? cabana : {
+      success: true,
+      data: cabana
     });
   } catch (error) {
-    console.error('Error al obtener servicio por ID:', error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Error al obtener el servicio.'
-    });
+    console.error(`Error al obtener cabaña ${req.params.id}:`, error);
+    res.status(500).json(req.isLegacyRequest ? 
+      null : 
+      { success: false, message: 'Error al obtener la cabaña' }
+    );
   }
 });
 
-// Rutas protegidas (solo admin)
-router.post('/', auth, restrictToAdmin, validarServicio, async (req, res) => {
+// Rutas protegidas (solo admin) - Mantienen formato nuevo
+router.post('/', auth, restrictToAdmin, async (req, res) => {
   try {
-    const nuevoServicio = await Servicio.create(req.body);
+    const nuevaCabana = await Cabana.create(req.body);
     res.status(201).json({
-      status: 'success',
-      data: {
-        servicio: nuevoServicio
-      }
+      success: true,
+      data: nuevaCabana
     });
   } catch (error) {
-    console.error('Error al crear servicio:', error);
+    console.error('Error al crear cabaña:', error);
     res.status(400).json({
-      status: 'error',
-      message: 'Error al crear el servicio.'
+      success: false,
+      message: 'Error al crear la cabaña'
     });
   }
 });
 
-router.patch('/:id', auth, restrictToAdmin, validarId, validarServicio, async (req, res) => {
+router.patch('/:id', auth, restrictToAdmin, validarId, async (req, res) => {
   try {
-    const servicio = await Servicio.update(req.params.id, req.body);
-    if (!servicio) {
-      return res.status(404).json({
-        status: 'fail',
-        message: 'No se encontró el servicio con ese ID.'
-      });
-    }
-    res.status(200).json({
-      status: 'success',
-      data: {
-        servicio
-      }
+    const cabana = await Cabana.update(req.params.id, req.body);
+    res.json({
+      success: true,
+      data: cabana
     });
   } catch (error) {
-    console.error('Error al actualizar servicio:', error);
+    console.error(`Error al actualizar cabaña ${req.params.id}:`, error);
     res.status(500).json({
-      status: 'error',
-      message: 'Error al actualizar el servicio.'
+      success: false,
+      message: 'Error al actualizar la cabaña'
     });
   }
 });
 
 router.delete('/:id', auth, restrictToAdmin, validarId, async (req, res) => {
   try {
-    const servicio = await Servicio.delete(req.params.id);
-    if (!servicio) {
-      return res.status(404).json({
-        status: 'fail',
-        message: 'No se encontró el servicio con ese ID.'
-      });
-    }
+    await Cabana.delete(req.params.id);
     res.status(204).json({
-      status: 'success',
+      success: true,
       data: null
     });
   } catch (error) {
-    console.error('Error al eliminar servicio:', error);
+    console.error(`Error al eliminar cabaña ${req.params.id}:`, error);
     res.status(500).json({
-      status: 'error',
-      message: 'Error al eliminar el servicio.'
+      success: false,
+      message: 'Error al eliminar la cabaña'
     });
   }
 });
