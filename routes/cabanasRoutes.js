@@ -1,79 +1,115 @@
 const express = require('express');
 const router = express.Router();
-const Cabana = require('../models/Cabana');
+const Servicio = require('../models/Servicio');
 const { auth, restrictToAdmin } = require('../middlewares/auth');
+const { validarServicio, validarId } = require('../middlewares/validators');
 
 // Rutas públicas
-router.get('/destacadas', async (req, res) => {
-  try {
-    const cabanas = await Cabana.findDestacadas();
-    res.json(cabanas);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-router.get('/disponibles', async (req, res) => {
-  try {
-    const { fechaInicio, fechaFin, adultos, ninos } = req.query;
-    const cabanas = await Cabana.findDisponibles(fechaInicio, fechaFin, adultos, ninos);
-    res.json(cabanas);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Rutas protegidas
-router.use(auth);
-
 router.get('/', async (req, res) => {
   try {
-    const cabanas = await Cabana.findAll();
-    res.json(cabanas);
+    const servicios = await Servicio.findAll();
+    res.status(200).json({
+      status: 'success',
+      results: servicios.length,
+      data: {
+        servicios
+      }
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Error al obtener servicios:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Error al obtener los servicios.'
+    });
   }
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:id', validarId, async (req, res) => {
   try {
-    const cabana = await Cabana.findById(req.params.id);
-    if (!cabana) {
-      return res.status(404).json({ error: 'Cabaña no encontrada' });
+    const servicio = await Servicio.findById(req.params.id);
+    if (!servicio) {
+      return res.status(404).json({
+        status: 'fail',
+        message: 'No se encontró el servicio con ese ID.'
+      });
     }
-    res.json(cabana);
+    res.status(200).json({
+      status: 'success',
+      data: {
+        servicio
+      }
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error('Error al obtener servicio por ID:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Error al obtener el servicio.'
+    });
   }
 });
 
-// Rutas solo para admin
-router.use(restrictToAdmin);
-
-router.post('/', async (req, res) => {
+// Rutas protegidas (solo admin)
+router.post('/', auth, restrictToAdmin, validarServicio, async (req, res) => {
   try {
-    const nuevaCabana = await Cabana.create(req.body);
-    res.status(201).json(nuevaCabana);
+    const nuevoServicio = await Servicio.create(req.body);
+    res.status(201).json({
+      status: 'success',
+      data: {
+        servicio: nuevoServicio
+      }
+    });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    console.error('Error al crear servicio:', error);
+    res.status(400).json({
+      status: 'error',
+      message: 'Error al crear el servicio.'
+    });
   }
 });
 
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', auth, restrictToAdmin, validarId, validarServicio, async (req, res) => {
   try {
-    const cabanaActualizada = await Cabana.update(req.params.id, req.body);
-    res.json(cabanaActualizada);
+    const servicio = await Servicio.update(req.params.id, req.body);
+    if (!servicio) {
+      return res.status(404).json({
+        status: 'fail',
+        message: 'No se encontró el servicio con ese ID.'
+      });
+    }
+    res.status(200).json({
+      status: 'success',
+      data: {
+        servicio
+      }
+    });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    console.error('Error al actualizar servicio:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Error al actualizar el servicio.'
+    });
   }
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', auth, restrictToAdmin, validarId, async (req, res) => {
   try {
-    await Cabana.delete(req.params.id);
-    res.status(204).end();
+    const servicio = await Servicio.delete(req.params.id);
+    if (!servicio) {
+      return res.status(404).json({
+        status: 'fail',
+        message: 'No se encontró el servicio con ese ID.'
+      });
+    }
+    res.status(204).json({
+      status: 'success',
+      data: null
+    });
   } catch (error) {
-    res.status(400).json({ error: error.message });
+    console.error('Error al eliminar servicio:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Error al eliminar el servicio.'
+    });
   }
 });
 
