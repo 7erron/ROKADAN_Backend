@@ -16,9 +16,9 @@ class Cabana {
   static async findDestacadas() {
     const query = `
       SELECT * FROM cabanas 
-      WHERE disponible = true 
+      WHERE destacada = true AND disponible = true
       ORDER BY creado_en DESC 
-      LIMIT 2
+      LIMIT 3
     `;
     const { rows } = await pool.query(query);
     return rows;
@@ -61,14 +61,31 @@ class Cabana {
     return rows[0];
   }
 
-  static async update(id, { nombre, descripcion, precio, capacidad, imagen, disponible }) {
+  static async update(id, { nombre, descripcion, precio, capacidad, imagen, disponible, destacada }) {
     const query = `
       UPDATE cabanas
-      SET nombre = $1, descripcion = $2, precio = $3, capacidad = $4, imagen = $5, disponible = $6, actualizado_en = NOW()
-      WHERE id = $7
+      SET 
+        nombre = $1, 
+        descripcion = $2, 
+        precio = $3, 
+        capacidad = $4, 
+        imagen = $5, 
+        disponible = $6, 
+        destacada = $7,
+        actualizado_en = NOW()
+      WHERE id = $8
       RETURNING *
     `;
-    const values = [nombre, descripcion, precio, capacidad, imagen, disponible, id];
+    const values = [
+      nombre, 
+      descripcion, 
+      precio, 
+      capacidad, 
+      imagen, 
+      disponible, 
+      destacada,
+      id
+    ];
     const { rows } = await pool.query(query, values);
     return rows[0];
   }
