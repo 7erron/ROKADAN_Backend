@@ -26,6 +26,7 @@ CREATE TABLE cabanas (
   capacidad INTEGER NOT NULL,
   imagen VARCHAR(255),
   disponible BOOLEAN DEFAULT TRUE,
+  destacada BOOLEAN DEFAULT FALSE,
   creado_en TIMESTAMP DEFAULT NOW(),
   actualizado_en TIMESTAMP DEFAULT NOW()
 );
