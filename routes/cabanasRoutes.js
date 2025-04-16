@@ -11,18 +11,19 @@ router.get('/destacadas', async (req, res) => {
     console.log('Solicitud recibida para /api/cabanas/destacadas');
     const cabanas = await Cabana.findDestacadas();
     
-    if (!cabanas || cabanas.length === 0) {
-      return res.status(404).json({ 
-        message: 'No se encontraron cabañas destacadas',
-        success: false
-      });
-    }
-    
-    res.json({
+    // Versión moderna (con metadata)
+    const response = {
       success: true,
       count: cabanas.length,
       data: cabanas
-    });
+    };
+    
+    // ENVIAR AMBOS FORMATOS (compatibilidad)
+    if (req.query.legacy === 'true') {
+      return res.json(cabanas); // Formato antiguo
+    } else {
+      return res.json(response); // Formato nuevo
+    }
     
   } catch (error) {
     console.error('Error en /api/cabanas/destacadas:', error);
