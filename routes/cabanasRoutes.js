@@ -23,34 +23,22 @@ router.use(detectLegacyFrontend);
 // Rutas públicas
 router.get('/destacadas', async (req, res) => {
   try {
-    console.log('Solicitud recibida para /api/cabanas/destacadas');
-    
-    // Verificar conexión a la base de datos
-    await pool.query('SELECT NOW()');
-    
-    // Obtener cabañas destacadas
     const cabanas = await Cabana.findDestacadas();
     
-    if (!cabanas || cabanas.length === 0) {
-      return res.status(404).json(req.isLegacyRequest ? 
-        [] : 
-        { success: false, message: 'No se encontraron cabañas destacadas' }
-      );
+    // Forzar formato legacy para compatibilidad
+    if (req.get('origin')?.includes('netlify')) {
+      return res.json(cabanas); // Envía array directo a Netlify
     }
-
-    // Respuesta compatible con frontend antiguo y nuevo
-    res.json(req.isLegacyRequest ? cabanas : {
+    
+    // Formato normal para otros clientes
+    res.json({
       success: true,
       count: cabanas.length,
       data: cabanas
     });
-    
   } catch (error) {
-    console.error('Error en /api/cabanas/destacadas:', error);
-    res.status(500).json(req.isLegacyRequest ? 
-      [] : 
-      { success: false, error: 'Error al obtener cabañas destacadas' }
-    );
+    console.error(error);
+    res.status(500).json([]); // Devuelve array vacío en error
   }
 });
 
