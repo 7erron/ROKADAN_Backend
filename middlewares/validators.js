@@ -16,7 +16,7 @@ exports.validarRegistro = [
     .trim()
     .notEmpty().withMessage('La contraseña es requerida')
     .isLength({ min: 6 }).withMessage('La contraseña debe tener al menos 6 caracteres'),
-  body('passwordConfirm')
+  body('confirmPassword')
     .trim()
     .notEmpty().withMessage('La confirmación de contraseña es requerida')
     .custom((value, { req }) => {
