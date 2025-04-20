@@ -3,35 +3,28 @@ const { generateToken } = require('../config/jwt');
 const { validationResult } = require('express-validator');
 
 exports.registrar = async (req, res) => {
+  // Validación de campos
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ 
       success: false,
-      errors: errors.array() 
+      errors: errors.array().map(err => err.msg) // Solo enviamos los mensajes
     });
   }
 
   try {
-    const { nombre, apellido, email, telefono, password, confirmPassword } = req.body;
+    const { nombre, apellido, email, telefono, password } = req.body;
 
-    // Verificar coincidencia de contraseñas
-    if (password !== confirmPassword) {
-      return res.status(400).json({
-        success: false,
-        message: 'Las contraseñas no coinciden'
-      });
-    }
-
-    // Verificar si el usuario ya existe
+    // Verificar usuario existente
     const usuarioExistente = await Usuario.findByEmail(email);
     if (usuarioExistente) {
       return res.status(400).json({
         success: false,
-        message: 'Ya existe un usuario con este email.'
+        message: 'Ya existe un usuario con este email'
       });
     }
 
-    // Crear nuevo usuario
+    // Crear usuario
     const nuevoUsuario = await Usuario.create({
       nombre,
       apellido,
@@ -40,10 +33,17 @@ exports.registrar = async (req, res) => {
       password
     });
 
-    // Generar token JWT
-    const token = generateToken(nuevoUsuario);
+    // Generar token (sin incluir password)
+    const userForToken = {
+      id: nuevoUsuario.id,
+      email: nuevoUsuario.email,
+      es_admin: nuevoUsuario.es_admin || false
+    };
+    
+    const token = generateToken(userForToken);
 
-    res.status(201).json({
+    // Respuesta exitosa
+    return res.status(201).json({
       success: true,
       token,
       user: {
@@ -55,40 +55,58 @@ exports.registrar = async (req, res) => {
         es_admin: nuevoUsuario.es_admin || false
       }
     });
+
   } catch (error) {
     console.error('Error en registro:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: 'Error al registrar el usuario.'
+      message: 'Error interno del servidor al registrar usuario'
     });
   }
 };
 
 exports.login = async (req, res) => {
+  // Validación de campos
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ 
       success: false,
-      errors: errors.array() 
+      errors: errors.array().map(err => err.msg)
     });
   }
 
   try {
     const { email, password } = req.body;
 
-    // Verificar usuario y contraseña
+    // Buscar usuario
     const usuario = await Usuario.findByEmail(email);
-    if (!usuario || !(await Usuario.comparePasswords(password, usuario.password))) {
+    if (!usuario) {
       return res.status(401).json({
         success: false,
-        message: 'Email o contraseña incorrectos.'
+        message: 'Credenciales inválidas'
       });
     }
 
-    // Generar token JWT
-    const token = generateToken(usuario);
+    // Comparar contraseñas
+    const passwordMatch = await Usuario.comparePasswords(password, usuario.password);
+    if (!passwordMatch) {
+      return res.status(401).json({
+        success: false,
+        message: 'Credenciales inválidas'
+      });
+    }
 
-    res.status(200).json({
+    // Generar token (sin incluir password)
+    const userForToken = {
+      id: usuario.id,
+      email: usuario.email,
+      es_admin: usuario.es_admin || false
+    };
+    
+    const token = generateToken(userForToken);
+
+    // Respuesta exitosa
+    return res.status(200).json({
       success: true,
       token,
       user: {
@@ -100,31 +118,43 @@ exports.login = async (req, res) => {
         es_admin: usuario.es_admin || false
       }
     });
+
   } catch (error) {
     console.error('Error en login:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: 'Error al iniciar sesión.'
+      message: 'Error interno del servidor al iniciar sesión'
     });
   }
 };
 
 exports.getMe = async (req, res) => {
   try {
-    res.status(200).json({
+    // Obtener datos actualizados del usuario
+    const usuarioActual = await Usuario.findById(req.usuario.id);
+    
+    if (!usuarioActual) {
+      return res.status(404).json({
+        success: false,
+        message: 'Usuario no encontrado'
+      });
+    }
+
+    return res.status(200).json({
       success: true,
       user: {
-        id: req.usuario.id,
-        nombre: req.usuario.nombre,
-        email: req.usuario.email,
-        es_admin: req.usuario.es_admin
+        id: usuarioActual.id,
+        nombre: usuarioActual.nombre,
+        email: usuarioActual.email,
+        es_admin: usuarioActual.es_admin || false
       }
     });
+
   } catch (error) {
     console.error('Error al obtener usuario:', error);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: 'Error al obtener información del usuario.'
+      message: 'Error interno del servidor'
     });
   }
 };

@@ -1,24 +1,52 @@
 const { body, param, query } = require('express-validator');
+const Usuario = require('../models/Usuario');
 
 exports.validarRegistro = [
-  body('nombre').trim().notEmpty().withMessage('El nombre es requerido'),
-  body('apellido').trim().notEmpty().withMessage('El apellido es requerido'),
+  // Nombre
+  body('nombre')
+    .trim()
+    .notEmpty().withMessage('El nombre es requerido')
+    .isLength({ max: 50 }).withMessage('El nombre no puede exceder los 50 caracteres'),
+  
+  // Apellido
+  body('apellido')
+    .trim()
+    .notEmpty().withMessage('El apellido es requerido')
+    .isLength({ max: 50 }).withMessage('El apellido no puede exceder los 50 caracteres'),
+  
+  // Email
   body('email')
     .trim()
     .notEmpty().withMessage('El email es requerido')
     .isEmail().withMessage('Email inválido')
-    .normalizeEmail(),
+    .normalizeEmail()
+    .custom(async (email) => {
+      const usuario = await Usuario.findByEmail(email);
+      if (usuario) {
+        throw new Error('El email ya está registrado');
+      }
+      return true;
+    }),
+  
+  // Teléfono
   body('telefono')
     .trim()
     .notEmpty().withMessage('El teléfono es requerido')
-    .isLength({ min: 8, max: 15 }).withMessage('El teléfono debe tener entre 8 y 15 caracteres'),
+    .isLength({ min: 8, max: 15 }).withMessage('El teléfono debe tener entre 8 y 15 caracteres')
+    .matches(/^[0-9]+$/).withMessage('El teléfono solo puede contener números'),
+  
+  // Password
   body('password')
     .trim()
     .notEmpty().withMessage('La contraseña es requerida')
-    .isLength({ min: 6 }).withMessage('La contraseña debe tener al menos 6 caracteres'),
+    .isLength({ min: 6 }).withMessage('La contraseña debe tener al menos 6 caracteres')
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).*$/)
+    .withMessage('La contraseña debe contener al menos una mayúscula, una minúscula y un número'),
+  
+  // Confirm Password
   body('confirmPassword')
     .trim()
-    .notEmpty().withMessage('La confirmación de contraseña es requerida')
+    .notEmpty().withMessage('Debes confirmar la contraseña')
     .custom((value, { req }) => {
       if (value !== req.body.password) {
         throw new Error('Las contraseñas no coinciden');
@@ -28,12 +56,17 @@ exports.validarRegistro = [
 ];
 
 exports.validarLogin = [
+  // Email
   body('email')
     .trim()
     .notEmpty().withMessage('El email es requerido')
     .isEmail().withMessage('Email inválido')
     .normalizeEmail(),
-  body('password').trim().notEmpty().withMessage('La contraseña es requerida')
+  
+  // Password
+  body('password')
+    .trim()
+    .notEmpty().withMessage('La contraseña es requerida')
 ];
 
 exports.validarCabana = [
