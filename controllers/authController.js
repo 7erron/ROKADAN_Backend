@@ -6,15 +6,18 @@ exports.registrar = async (req, res) => {
   // Validar errores
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
+    console.log('Errores de validación:', errors.array()); // verificacion
     return res.status(400).json({ errors: errors.array() });
   }
 
   try {
     const { nombre, apellido, email, telefono, password } = req.body;
+    console.log('Datos recibidos:', { nombre, apellido, email, telefono }); // verificacion
 
     // Verificar si el usuario ya existe
     const usuarioExistente = await Usuario.findByEmail(email);
     if (usuarioExistente) {
+      console.log('Usuario ya existe:', email); // verificacion
       return res.status(400).json({
         status: 'error',
         message: 'Ya existe un usuario con este email.'
@@ -22,6 +25,7 @@ exports.registrar = async (req, res) => {
     }
 
     // Crear nuevo usuario
+    console.log('Creando nuevo usuario...'); // verificacion
     const nuevoUsuario = await Usuario.create({
       nombre,
       apellido,
@@ -29,6 +33,8 @@ exports.registrar = async (req, res) => {
       telefono,
       password
     });
+
+    console.log('Usuario creado:', nuevoUsuario); // verificacion
 
     // Generar token JWT
     const token = generateToken(nuevoUsuario);
@@ -47,7 +53,7 @@ exports.registrar = async (req, res) => {
       }
     });
   } catch (error) {
-    console.error(error);
+    console.error('Error completo en registro:', error); //verificacion
     res.status(500).json({
       status: 'error',
       message: 'Error al registrar el usuario.'
