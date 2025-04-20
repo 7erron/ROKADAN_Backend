@@ -29,6 +29,8 @@ const auth = async (req, res, next) => {
     // 4) Adjuntar usuario al request (usando req.usuario para consistencia)
     req.usuario = {
       id: currentUser.id,
+      nombre: currentUser.nombre, 
+      apellido: currentUser.apellido,
       email: currentUser.email,
       es_admin: currentUser.es_admin
     };

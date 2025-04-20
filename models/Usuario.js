@@ -10,6 +10,9 @@ class Usuario {
       RETURNING id, nombre, apellido, email, telefono, es_admin, creado_en, actualizado_en
     `;
     const values = [nombre, apellido, email, telefono, hashedPassword, es_admin];
+
+    console.log('Ejecutando query:', query, values); // verificacion
+
     const { rows } = await pool.query(query, values);
     return rows[0];
   }
