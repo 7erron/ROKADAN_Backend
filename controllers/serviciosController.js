@@ -1,6 +1,7 @@
 const Servicio = require('../models/Servicio');
 const { validationResult } = require('express-validator');
 
+// Obtener todos los servicios
 exports.obtenerServicios = async (req, res) => {
   try {
     const servicios = await Servicio.findAll();
@@ -20,9 +21,10 @@ exports.obtenerServicios = async (req, res) => {
   }
 };
 
+// Obtener un servicio por ID
 exports.obtenerServicio = async (req, res) => {
   try {
-    const servicio = await Servicio.findById(req.params.id);
+    const servicio = await Servicio.findByPk(req.params.id); // Método correcto en Sequelize
     if (!servicio) {
       return res.status(404).json({
         status: 'fail',
@@ -44,6 +46,7 @@ exports.obtenerServicio = async (req, res) => {
   }
 };
 
+// Crear un nuevo servicio
 exports.crearServicio = async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -67,6 +70,7 @@ exports.crearServicio = async (req, res) => {
   }
 };
 
+// Actualizar un servicio
 exports.actualizarServicio = async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -74,13 +78,15 @@ exports.actualizarServicio = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const servicio = await Servicio.update(req.params.id, req.body);
+    const servicio = await Servicio.findByPk(req.params.id); // Usar findByPk
     if (!servicio) {
       return res.status(404).json({
         status: 'fail',
         message: 'No se encontró el servicio con ese ID.'
       });
     }
+
+    await servicio.update(req.body); // Actualizamos el servicio
     res.status(200).json({
       status: 'success',
       data: {
@@ -96,15 +102,18 @@ exports.actualizarServicio = async (req, res) => {
   }
 };
 
+// Eliminar un servicio
 exports.eliminarServicio = async (req, res) => {
   try {
-    const servicio = await Servicio.delete(req.params.id);
+    const servicio = await Servicio.findByPk(req.params.id); // Usar findByPk
     if (!servicio) {
       return res.status(404).json({
         status: 'fail',
         message: 'No se encontró el servicio con ese ID.'
       });
     }
+
+    await servicio.destroy(); // Eliminar servicio
     res.status(204).json({
       status: 'success',
       data: null
