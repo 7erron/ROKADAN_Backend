@@ -3,19 +3,17 @@ const { generateToken } = require('../config/jwt');
 const { validationResult } = require('express-validator');
 
 exports.registrar = async (req, res) => {
-  // Validación de campos
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ 
       success: false,
-      errors: errors.array().map(err => err.msg) // Solo enviamos los mensajes
+      errors: errors.array().map(err => err.msg)
     });
   }
 
   try {
     const { nombre, apellido, email, telefono, password } = req.body;
 
-    // Verificar usuario existente
     const usuarioExistente = await Usuario.findByEmail(email);
     if (usuarioExistente) {
       return res.status(400).json({
@@ -24,7 +22,6 @@ exports.registrar = async (req, res) => {
       });
     }
 
-    // Crear usuario
     const nuevoUsuario = await Usuario.create({
       nombre,
       apellido,
@@ -33,7 +30,6 @@ exports.registrar = async (req, res) => {
       password
     });
 
-    // Generar token (sin incluir password)
     const userForToken = {
       id: nuevoUsuario.id,
       email: nuevoUsuario.email,
@@ -42,7 +38,6 @@ exports.registrar = async (req, res) => {
     
     const token = generateToken(userForToken);
 
-    // Respuesta exitosa
     return res.status(201).json({
       success: true,
       token,
@@ -66,7 +61,6 @@ exports.registrar = async (req, res) => {
 };
 
 exports.login = async (req, res) => {
-  // Validación de campos
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(400).json({ 
@@ -78,7 +72,6 @@ exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Buscar usuario
     const usuario = await Usuario.findByEmail(email);
     if (!usuario) {
       return res.status(401).json({
@@ -87,7 +80,6 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Comparar contraseñas
     const passwordMatch = await Usuario.comparePasswords(password, usuario.password);
     if (!passwordMatch) {
       return res.status(401).json({
@@ -96,7 +88,6 @@ exports.login = async (req, res) => {
       });
     }
 
-    // Generar token (sin incluir password)
     const userForToken = {
       id: usuario.id,
       email: usuario.email,
@@ -105,7 +96,6 @@ exports.login = async (req, res) => {
     
     const token = generateToken(userForToken);
 
-    // Respuesta exitosa
     return res.status(200).json({
       success: true,
       token,
@@ -130,7 +120,6 @@ exports.login = async (req, res) => {
 
 exports.getMe = async (req, res) => {
   try {
-    // Obtener datos actualizados del usuario
     const usuarioActual = await Usuario.findById(req.usuario.id);
     
     if (!usuarioActual) {
