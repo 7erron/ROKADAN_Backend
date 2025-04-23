@@ -20,7 +20,7 @@ const obtenerServicios = async (req, res, next) => {
 const obtenerServicio = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const servicio = await Servicio.findByPk(id);
+    const servicio = await Servicio.findByID(id);
 
     if (!servicio) {
       return next(new AppError('Servicio no encontrado', 404));
@@ -58,7 +58,7 @@ const actualizarServicio = async (req, res, next) => {
     const { id } = req.params;
     const { nombre, descripcion, precio } = req.body;
 
-    const servicio = await Servicio.findByPk(id);
+    const servicio = await Servicio.findById(id);
     if (!servicio) {
       return next(new AppError('Servicio no encontrado', 404));
     }
@@ -82,7 +82,7 @@ const actualizarServicio = async (req, res, next) => {
 const eliminarServicio = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const servicio = await Servicio.findByPk(id);
+    const servicio = await Servicio.findById(id);
     if (!servicio) {
       return next(new AppError('Servicio no encontrado', 404));
     }

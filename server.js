@@ -35,8 +35,8 @@ const reservasRoutes = require('./routes/reservasRoutes');
 
 // Montar las rutas
 app.use('/api/auth', authRoutes);
-app.use('/api/cabanas', cabanasRoutes);
-app.use('/api/servicios', serviciosRoutes);
+app.use('/cabanas', cabanasRoutes);
+app.use('/servicios', serviciosRoutes);
 app.use('/api/reservas', reservasRoutes);
 
 // Health check route
