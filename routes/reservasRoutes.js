@@ -1,13 +1,12 @@
 const express = require('express');
 const router = express.Router();
 
-// Validar que los módulos existen antes de usarlos
 const reservasController = require('../controllers/reservasController');
-const { auth } = require('../middlewares/auth');
+const { verificarToken, verificarRol } = require('../middlewares/auth');
 const { validarReserva, validarId } = require('../middlewares/validators');
 
 // Middleware global de autenticación
-router.use(auth);
+router.use(verificarToken);
 
 // Rutas para reservas
 router
@@ -22,5 +21,10 @@ router
 router
   .route('/:id/cancelar')
   .patch(validarId, reservasController.cancelarReserva);
+
+// Ruta protegida solo para admin
+router
+  .route('/admin')
+  .get(verificarRol('admin'), reservasController.funcionSoloParaAdmin);
 
 module.exports = router;
