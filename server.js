@@ -1,24 +1,19 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const { pool } = require('./config/db');
 
-// Importar rutas
-const authRoutes = require('./routes/authRoutes');
-const cabanasRoutes = require('./routes/cabanasRoutes');
-const serviciosRoutes = require('./routes/serviciosRoutes');
-const reservasRoutes = require('./routes/reservasRoutes');
-
 const app = express();
 
-// Middlewares esenciales
+// Middlewares básicos
 app.use(helmet());
 app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Configuración de CORS
+// Configuración CORS
 const corsOptions = {
   origin: [
     'https://rokadan.netlify.app',
@@ -32,14 +27,11 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-// Ruta de verificación de salud
-app.get('/api/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'OK', 
-    message: 'API de Cabañas Rokadan funcionando correctamente',
-    timestamp: new Date().toISOString()
-  });
-});
+// Importar rutas
+const authRoutes = require('./routes/authRoutes');
+const cabanasRoutes = require('./routes/cabanasRoutes');
+const serviciosRoutes = require('./routes/serviciosRoutes');
+const reservasRoutes = require('./routes/reservasRoutes');
 
 // Montar rutas
 app.use('/api/auth', authRoutes);
@@ -47,52 +39,45 @@ app.use('/api/cabanas', cabanasRoutes);
 app.use('/api/servicios', serviciosRoutes);
 app.use('/api/reservas', reservasRoutes);
 
+// Ruta de salud
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'OK',
+    message: 'API funcionando correctamente',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Ruta principal
 app.get('/', (req, res) => {
   res.json({
-    message: 'Bienvenido a la API de Cabañas Rokadan',
+    message: 'API de Cabañas Rokadan',
     version: '1.0.0',
-    endpoints: {
-      auth: '/api/auth',
-      cabañas: '/api/cabanas',
-      servicios: '/api/servicios',
-      reservas: '/api/reservas'
-    },
-    documentation: 'https://github.com/tu-repo/documentacion'
+    environment: process.env.NODE_ENV || 'development'
   });
 });
 
-// Manejo de errores 404
-app.use((req, res) => {
-  res.status(404).json({
-    status: 'error',
-    message: 'Ruta no encontrada',
-    suggestion: 'Verifique la URL o consulte la documentación'
-  });
+// Manejo de errores
+app.use((req, res, next) => {
+  res.status(404).json({ error: 'Ruta no encontrada' });
 });
 
-// Manejo de errores global
 app.use((err, req, res, next) => {
-  console.error('Error global:', err.stack);
-  res.status(500).json({
-    status: 'error',
-    message: 'Error interno del servidor',
-    error: process.env.NODE_ENV === 'development' ? err.message : undefined
-  });
+  console.error(err.stack);
+  res.status(500).json({ error: 'Error interno del servidor' });
 });
 
-// Conexión a la base de datos y inicio del servidor
+// Iniciar servidor
+const PORT = process.env.PORT || 10000;
 pool.connect()
   .then(() => {
-    console.log('✅ Conexión a PostgreSQL establecida');
-    const PORT = process.env.PORT || 10000;
     app.listen(PORT, () => {
-      console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
-      console.log('🔹 Entorno:', process.env.NODE_ENV || 'development');
+      console.log(`Servidor corriendo en puerto ${PORT}`);
+      console.log('Entorno:', process.env.NODE_ENV || 'development');
     });
   })
   .catch(err => {
-    console.error('❌ Error de conexión a PostgreSQL:', err);
+    console.error('Error al conectar a PostgreSQL:', err);
     process.exit(1);
   });
 

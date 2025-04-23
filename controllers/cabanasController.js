@@ -1,177 +1,159 @@
 const Cabana = require('../models/Cabana');
 const { validationResult } = require('express-validator');
+const AppError = require('../utils/appError');
 
-exports.obtenerCabanas = async (req, res) => {
+// Controlador para obtener todas las cabañas
+const obtenerCabanas = async (req, res, next) => {
   try {
     const cabanas = await Cabana.findAll();
+    
     res.status(200).json({
       status: 'success',
       results: cabanas.length,
-      data: {
-        cabanas
-      }
+      data: { cabanas },
+      timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Error al obtener las cabañas.'
-    });
+    next(new AppError('Error al obtener las cabañas', 500));
   }
 };
 
-exports.obtenerCabana = async (req, res) => {
+// Controlador para obtener una cabaña específica
+const obtenerCabana = async (req, res, next) => {
   try {
     const cabana = await Cabana.findById(req.params.id);
+    
     if (!cabana) {
-      return res.status(404).json({
-        status: 'fail',
-        message: 'No se encontró la cabaña con ese ID.'
-      });
+      return next(new AppError('No se encontró la cabaña con ese ID', 404));
     }
+
     res.status(200).json({
       status: 'success',
-      data: {
-        cabana
-      }
+      data: { cabana },
+      timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Error al obtener la cabaña.'
-    });
+    next(new AppError('Error al obtener la cabaña', 500));
   }
 };
 
-exports.obtenerCabanasDestacadas = async (req, res) => {
+// Controlador para obtener cabañas destacadas
+const obtenerCabanasDestacadas = async (req, res, next) => {
   try {
     const cabanas = await Cabana.findDestacadas();
+    
     res.status(200).json({
       status: 'success',
       results: cabanas.length,
-      data: {
-        cabanas
-      }
+      data: { cabanas },
+      timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Error al obtener cabañas destacadas.'
-    });
+    next(new AppError('Error al obtener cabañas destacadas', 500));
   }
 };
 
-exports.obtenerCabanasDisponibles = async (req, res) => {
+// Controlador para obtener cabañas disponibles
+const obtenerCabanasDisponibles = async (req, res, next) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return next(new AppError('Datos de entrada inválidos', 400, errors.array()));
     }
 
-    const { fechaInicio, fechaFin, adultos, ninos } = req.query;
+    const { fechaInicio, fechaFin, adultos = 1, ninos = 0 } = req.query;
     
     if (!fechaInicio || !fechaFin) {
-      return res.status(400).json({
-        status: 'fail',
-        message: 'Fechas de inicio y fin son requeridas'
-      });
+      return next(new AppError('Fechas de inicio y fin son requeridas', 400));
     }
 
     const cabanas = await Cabana.findDisponibles(
       fechaInicio,
       fechaFin,
-      parseInt(adultos || 1),
-      parseInt(ninos || 0)
+      parseInt(adultos),
+      parseInt(ninos)
     );
     
     res.status(200).json({
       status: 'success',
       results: cabanas.length,
-      data: {
-        cabanas
-      }
+      data: { cabanas },
+      timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Error al buscar cabañas disponibles.'
-    });
+    next(new AppError('Error al buscar cabañas disponibles', 500));
   }
 };
 
-exports.crearCabana = async (req, res) => {
+// Controlador para crear una nueva cabaña
+const crearCabana = async (req, res, next) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return next(new AppError('Datos de entrada inválidos', 400, errors.array()));
     }
 
     const nuevaCabana = await Cabana.create(req.body);
+    
     res.status(201).json({
       status: 'success',
-      data: {
-        cabana: nuevaCabana
-      }
+      data: { cabana: nuevaCabana },
+      timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Error al crear la cabaña.'
-    });
+    next(new AppError('Error al crear la cabaña', 500));
   }
 };
 
-exports.actualizarCabana = async (req, res) => {
+// Controlador para actualizar una cabaña
+const actualizarCabana = async (req, res, next) => {
   try {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
+      return next(new AppError('Datos de entrada inválidos', 400, errors.array()));
     }
 
     const cabana = await Cabana.update(req.params.id, req.body);
+    
     if (!cabana) {
-      return res.status(404).json({
-        status: 'fail',
-        message: 'No se encontró la cabaña con ese ID.'
-      });
+      return next(new AppError('No se encontró la cabaña con ese ID', 404));
     }
+
     res.status(200).json({
       status: 'success',
-      data: {
-        cabana
-      }
+      data: { cabana },
+      timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Error al actualizar la cabaña.'
-    });
+    next(new AppError('Error al actualizar la cabaña', 500));
   }
 };
 
-exports.eliminarCabana = async (req, res) => {
+// Controlador para eliminar una cabaña
+const eliminarCabana = async (req, res, next) => {
   try {
     const cabana = await Cabana.delete(req.params.id);
+    
     if (!cabana) {
-      return res.status(404).json({
-        status: 'fail',
-        message: 'No se encontró la cabaña con ese ID.'
-      });
+      return next(new AppError('No se encontró la cabaña con ese ID', 404));
     }
+
     res.status(204).json({
       status: 'success',
-      data: null
+      data: null,
+      timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Error al eliminar la cabaña.'
-    });
+    next(new AppError('Error al eliminar la cabaña', 500));
   }
+};
+
+module.exports = {
+  obtenerCabanas,
+  obtenerCabana,
+  obtenerCabanasDestacadas,
+  obtenerCabanasDisponibles,
+  crearCabana,
+  actualizarCabana,
+  eliminarCabana
 };
