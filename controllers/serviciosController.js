@@ -12,6 +12,7 @@ const obtenerServicios = async (req, res, next) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
+    console.error('Error real al obtener servicios:', error);
     next(new AppError('Error al obtener servicios', 500));
   }
 };
