@@ -3,6 +3,7 @@ const Cabana = require('../models/Cabana');
 const Servicio = require('../models/Servicio');
 const { validationResult } = require('express-validator');
 
+// Obtener todas las reservas o solo las del usuario autenticado
 exports.obtenerReservas = async (req, res) => {
   try {
     let reservas;
@@ -11,13 +12,11 @@ exports.obtenerReservas = async (req, res) => {
     } else {
       reservas = await Reserva.findByUserId(req.user.id);
     }
-    
+
     res.status(200).json({
       status: 'success',
       results: reservas.length,
-      data: {
-        reservas
-      }
+      data: { reservas }
     });
   } catch (error) {
     console.error(error);
@@ -28,6 +27,7 @@ exports.obtenerReservas = async (req, res) => {
   }
 };
 
+// Obtener una reserva específica por ID
 exports.obtenerReserva = async (req, res) => {
   try {
     const reserva = await Reserva.findById(req.params.id);
@@ -38,7 +38,6 @@ exports.obtenerReserva = async (req, res) => {
       });
     }
 
-    // Verificar que el usuario es dueño de la reserva o es admin
     if (reserva.usuario_id !== req.user.id && !req.user.es_admin) {
       return res.status(403).json({
         status: 'fail',
@@ -48,9 +47,7 @@ exports.obtenerReserva = async (req, res) => {
 
     res.status(200).json({
       status: 'success',
-      data: {
-        reserva
-      }
+      data: { reserva }
     });
   } catch (error) {
     console.error(error);
@@ -61,6 +58,7 @@ exports.obtenerReserva = async (req, res) => {
   }
 };
 
+// Crear una nueva reserva
 exports.crearReserva = async (req, res) => {
   try {
     const errors = validationResult(req);
@@ -68,7 +66,6 @@ exports.crearReserva = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    // Verificar que la cabaña existe
     const cabana = await Cabana.findById(req.body.cabana_id);
     if (!cabana) {
       return res.status(404).json({
@@ -77,7 +74,6 @@ exports.crearReserva = async (req, res) => {
       });
     }
 
-    // Verificar que los servicios existen
     if (req.body.servicios && req.body.servicios.length > 0) {
       for (const servicioId of req.body.servicios) {
         const servicio = await Servicio.findById(servicioId);
@@ -90,11 +86,9 @@ exports.crearReserva = async (req, res) => {
       }
     }
 
-    // Calcular el total
     const dias = (new Date(req.body.fecha_fin) - new Date(req.body.fecha_inicio)) / (1000 * 60 * 60 * 24);
     let total = cabana.precio * dias;
 
-    // Agregar costo de servicios
     if (req.body.servicios && req.body.servicios.length > 0) {
       for (const servicioId of req.body.servicios) {
         const servicio = await Servicio.findById(servicioId);
@@ -102,7 +96,6 @@ exports.crearReserva = async (req, res) => {
       }
     }
 
-    // Crear la reserva
     const nuevaReserva = await Reserva.create({
       usuario_id: req.user.id,
       cabana_id: req.body.cabana_id,
@@ -116,9 +109,7 @@ exports.crearReserva = async (req, res) => {
 
     res.status(201).json({
       status: 'success',
-      data: {
-        reserva: nuevaReserva
-      }
+      data: { reserva: nuevaReserva }
     });
   } catch (error) {
     console.error(error);
@@ -129,6 +120,7 @@ exports.crearReserva = async (req, res) => {
   }
 };
 
+// Cancelar una reserva
 exports.cancelarReserva = async (req, res) => {
   try {
     const reserva = await Reserva.findById(req.params.id);
@@ -139,7 +131,6 @@ exports.cancelarReserva = async (req, res) => {
       });
     }
 
-    // Verificar que el usuario es dueño de la reserva o es admin
     if (reserva.usuario_id !== req.user.id && !req.user.es_admin) {
       return res.status(403).json({
         status: 'fail',
@@ -147,7 +138,6 @@ exports.cancelarReserva = async (req, res) => {
       });
     }
 
-    // Solo se puede cancelar si está pendiente o confirmada
     if (!['pendiente', 'confirmada'].includes(reserva.estado)) {
       return res.status(400).json({
         status: 'fail',
@@ -158,15 +148,29 @@ exports.cancelarReserva = async (req, res) => {
     const reservaCancelada = await Reserva.cancel(req.params.id);
     res.status(200).json({
       status: 'success',
-      data: {
-        reserva: reservaCancelada
-      }
+      data: { reserva: reservaCancelada }
     });
   } catch (error) {
     console.error(error);
     res.status(500).json({
       status: 'error',
       message: 'Error al cancelar la reserva.'
+    });
+  }
+};
+
+// ✅ Ruta especial solo para administradores
+exports.funcionSoloParaAdmin = async (req, res) => {
+  try {
+    res.status(200).json({
+      status: 'success',
+      message: 'Accediste correctamente a la ruta protegida de administrador.'
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Error al acceder a la ruta de administrador.'
     });
   }
 };
