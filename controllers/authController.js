@@ -120,7 +120,7 @@ exports.login = async (req, res) => {
 
 exports.getMe = async (req, res) => {
   try {
-    const usuarioActual = await Usuario.findById(req.usuario.id);
+    const usuarioActual = await Usuario.findById(req.user.id);
     
     if (!usuarioActual) {
       return res.status(404).json({

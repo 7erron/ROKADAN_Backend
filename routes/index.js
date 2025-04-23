@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
 
-// Importar rutas
+// Importación de rutas principales
 const authRoutes = require('./authRoutes');
 const cabanasRoutes = require('./cabanasRoutes');
 const serviciosRoutes = require('./serviciosRoutes');
 const reservasRoutes = require('./reservasRoutes');
 
-// Configurar rutas con prefijo /api
+// Enlazar cada ruta bajo el prefijo /api
 router.use('/auth', authRoutes);
 router.use('/cabanas', cabanasRoutes);
 router.use('/servicios', serviciosRoutes);
