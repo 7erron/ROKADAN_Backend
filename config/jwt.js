@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const AppError = require('../utils/appError');
 require('dotenv').config();
 
-// Configuración de JWT con valores por defecto seguros
+// Configuración segura del JWT
 const JWT_CONFIG = {
   secret: process.env.JWT_SECRET,
   expiresIn: process.env.JWT_EXPIRES_IN || '24h',
@@ -10,26 +10,30 @@ const JWT_CONFIG = {
   cookieExpires: parseInt(process.env.JWT_COOKIE_EXPIRES) || 90
 };
 
-// Validación estricta en inicio
+// Validación en arranque
 if (!JWT_CONFIG.secret) {
   console.error('❌ ERROR FATAL: JWT_SECRET no está configurado');
-  console.error('Por favor, define JWT_SECRET en tus variables de entorno');
-  process.exit(1); // Termina la aplicación si no hay secret
+  process.exit(1);
 }
 
+/**
+ * Genera un token JWT con los datos esenciales del usuario.
+ * @param {Object} userPayload - Información del usuario (debe incluir id, email y es_admin).
+ * @returns {string} Token firmado.
+ */
 const generateToken = (userPayload) => {
   try {
-    // Validación de payload
-    if (!userPayload || !userPayload.id || !userPayload.email) {
+    const { id, email, es_admin } = userPayload;
+
+    if (!id || !email) {
       throw new AppError('Datos de usuario incompletos para generar token', 400);
     }
 
-    // Payload seguro
     const payload = {
-      id: userPayload.id,
-      email: userPayload.email,
-      es_admin: userPayload.es_admin || false,
-      iat: Math.floor(Date.now() / 1000) // Fecha de emisión
+      id,
+      email,
+      es_admin: Boolean(es_admin), // Fuerza a booleano explícitamente
+      iat: Math.floor(Date.now() / 1000)
     };
 
     return jwt.sign(payload, JWT_CONFIG.secret, {
@@ -43,6 +47,11 @@ const generateToken = (userPayload) => {
   }
 };
 
+/**
+ * Verifica y decodifica un token JWT.
+ * @param {string} token
+ * @returns {Object} Payload decodificado.
+ */
 const verifyToken = (token) => {
   try {
     if (!token) {
@@ -51,11 +60,10 @@ const verifyToken = (token) => {
 
     return jwt.verify(token, JWT_CONFIG.secret, {
       algorithms: [JWT_CONFIG.algorithm],
-      clockTolerance: 30 // 30 segundos de tolerancia para sincronización de reloj
+      clockTolerance: 30
     });
 
   } catch (error) {
-    // Manejo específico de errores JWT
     if (error.name === 'TokenExpiredError') {
       throw new AppError('Tu sesión ha expirado. Por favor inicia sesión nuevamente', 401);
     }
@@ -67,6 +75,9 @@ const verifyToken = (token) => {
   }
 };
 
+/**
+ * Adjunta el token JWT a la respuesta como cookie.
+ */
 const attachTokenToResponse = (res, token) => {
   const cookieOptions = {
     expires: new Date(Date.now() + JWT_CONFIG.cookieExpires * 24 * 60 * 60 * 1000),
@@ -80,6 +91,9 @@ const attachTokenToResponse = (res, token) => {
   res.cookie('jwt_token', token, cookieOptions);
 };
 
+/**
+ * Elimina el token JWT de las cookies de la respuesta.
+ */
 const clearTokenFromResponse = (res) => {
   res.clearCookie('jwt_token', {
     httpOnly: true,
@@ -95,5 +109,5 @@ module.exports = {
   verifyToken,
   attachTokenToResponse,
   clearTokenFromResponse,
-  JWT_CONFIG // Exportamos la configuración por si se necesita
+  JWT_CONFIG
 };
