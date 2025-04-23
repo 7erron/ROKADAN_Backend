@@ -3,11 +3,16 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const { pool } = require('./config/db');
-const routes = require('./routes');
+
+// Importar rutas
+const authRoutes = require('./routes/authRoutes');
+const cabanasRoutes = require('./routes/cabanasRoutes');
+const serviciosRoutes = require('./routes/serviciosRoutes');
+const reservasRoutes = require('./routes/reservasRoutes');
 
 const app = express();
 
-// Middlewares
+// Middlewares esenciales
 app.use(helmet());
 app.use(morgan('dev'));
 app.use(express.json());
@@ -21,76 +26,74 @@ const corsOptions = {
     'http://localhost:5173',
     'https://rokadan-backend.onrender.com'
   ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 };
 app.use(cors(corsOptions));
 
+// Ruta de verificación de salud
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'OK', 
+    message: 'API de Cabañas Rokadan funcionando correctamente',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Montar rutas
+app.use('/api/auth', authRoutes);
+app.use('/api/cabanas', cabanasRoutes);
+app.use('/api/servicios', serviciosRoutes);
+app.use('/api/reservas', reservasRoutes);
+
 // Ruta principal
 app.get('/', (req, res) => {
   res.json({
-    message: 'API de Cabañas Rokadan',
+    message: 'Bienvenido a la API de Cabañas Rokadan',
+    version: '1.0.0',
     endpoints: {
-      auth: {
-        login: 'POST /api/auth/login',
-        register: 'POST /api/auth/registrar',
-        user: 'GET /api/auth/me'
-      },
-      cabanas: '/api/cabanas',
+      auth: '/api/auth',
+      cabañas: '/api/cabanas',
       servicios: '/api/servicios',
       reservas: '/api/reservas'
-    }
+    },
+    documentation: 'https://github.com/tu-repo/documentacion'
   });
 });
 
-// Ruta de salud
-app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'OK', message: 'Backend funcionando correctamente' });
-});
-
-// Montar rutas API
-app.use('/api', routes);
-
-// Manejador de 404
+// Manejo de errores 404
 app.use((req, res) => {
-  res.status(404).json({ 
+  res.status(404).json({
     status: 'error',
     message: 'Ruta no encontrada',
-    availableRoutes: {
-      auth: '/api/auth',
-      cabanas: '/api/cabanas',
-      servicios: '/api/servicios',
-      reservas: '/api/reservas'
-    }
+    suggestion: 'Verifique la URL o consulte la documentación'
   });
 });
 
-// Manejador de errores
+// Manejo de errores global
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ 
+  console.error('Error global:', err.stack);
+  res.status(500).json({
     status: 'error',
     message: 'Error interno del servidor',
     error: process.env.NODE_ENV === 'development' ? err.message : undefined
   });
 });
 
-// Conexión a la base de datos e inicio del servidor
-pool.query('SELECT NOW()', (err, res) => {
-  if (err) {
-    console.error('Error al conectar a PostgreSQL:', err);
+// Conexión a la base de datos y inicio del servidor
+pool.connect()
+  .then(() => {
+    console.log('✅ Conexión a PostgreSQL establecida');
+    const PORT = process.env.PORT || 10000;
+    app.listen(PORT, () => {
+      console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
+      console.log('🔹 Entorno:', process.env.NODE_ENV || 'development');
+    });
+  })
+  .catch(err => {
+    console.error('❌ Error de conexión a PostgreSQL:', err);
     process.exit(1);
-  }
-
-  const PORT = process.env.PORT || 10000;
-  app.listen(PORT, () => {
-    console.log(`Servidor corriendo en http://localhost:${PORT}`);
-    console.log('Rutas de autenticación disponibles:');
-    console.log('- POST /api/auth/registrar');
-    console.log('- POST /api/auth/login');
-    console.log('- GET /api/auth/me');
   });
-});
 
 module.exports = app;
