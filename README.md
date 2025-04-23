@@ -83,3 +83,38 @@ VALUES
   ('WiFi Gratis', 'Conexión WiFi de alta velocidad en la cabaña.', 0),
   ('Piscina', 'Acceso a piscina climatizada.', 10000),
   ('Chimenea', 'Chimenea interior para noches frías.', 8000);
+
+  -- Mejoras realizada en las tablas
+(Esto crea una función reutilizable para todos tus triggers)
+  CREATE OR REPLACE FUNCTION actualizar_actualizado_en()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.actualizado_en = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Crear triggers en las tablas
+---usuarios
+CREATE TRIGGER trigger_actualizar_usuarios
+BEFORE UPDATE ON usuarios
+FOR EACH ROW
+EXECUTE FUNCTION actualizar_actualizado_en();
+
+---cabanas
+CREATE TRIGGER trigger_actualizar_cabanas
+BEFORE UPDATE ON cabanas
+FOR EACH ROW
+EXECUTE FUNCTION actualizar_actualizado_en();
+
+---servicios
+CREATE TRIGGER trigger_actualizar_servicios
+BEFORE UPDATE ON servicios
+FOR EACH ROW
+EXECUTE FUNCTION actualizar_actualizado_en();
+
+---reservas
+CREATE TRIGGER trigger_actualizar_reservas
+BEFORE UPDATE ON reservas
+FOR EACH ROW
+EXECUTE FUNCTION actualizar_actualizado_en();

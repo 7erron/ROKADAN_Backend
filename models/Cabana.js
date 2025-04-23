@@ -24,7 +24,7 @@ class Cabana {
     return rows;
   }
 
-  static async findDisponibles(fechaInicio, fechaFin, adultos, ninos) {
+  static async findDisponibles(fechaInicio, fechaFin, adultos = 1, ninos = 0) {
     const query = `
       SELECT c.* 
       FROM cabanas c
@@ -33,7 +33,7 @@ class Cabana {
       AND c.id NOT IN (
         SELECT r.cabana_id 
         FROM reservas r
-        WHERE r.estado != 'cancelada'
+        WHERE r.estado NOT IN ('cancelada', 'rechazada')
         AND (
           (r.fecha_inicio <= $3 AND r.fecha_fin >= $3) OR
           (r.fecha_inicio <= $4 AND r.fecha_fin >= $4) OR
@@ -42,8 +42,8 @@ class Cabana {
       )
     `;
     const { rows } = await pool.query(query, [
-      adultos || 0,
-      ninos || 0,
+      adultos,
+      ninos,
       fechaInicio,
       fechaFin
     ]);

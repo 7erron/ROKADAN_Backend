@@ -12,7 +12,7 @@ router.use(verificarToken);
 // Rutas para cabañas
 router.route('/cabanas').get(async (req, res) => {
     try {
-        const cabanas = await Cabana.findAll(); // Asegúrate de tener este modelo
+        const cabanas = await Cabana.findAll(); // Asegúrate de tener este modelo y que la conexión esté bien
         res.json(cabanas);
     } catch (err) {
         console.error(err);
@@ -21,17 +21,15 @@ router.route('/cabanas').get(async (req, res) => {
 });
 
 // Rutas para servicios adicionales
-router.route('/servicios').get(serviciosController.obtenerServicios); // Uso de getServicios del controlador
+router.route('/servicios').get(serviciosController.obtenerServicios); // Asegúrate de que el controlador esté correcto
 
 // Rutas para reservas
-router.route('/')
-    .get(reservasController.obtenerReservas)
-    .post(validarReserva, reservasController.crearReserva);
+router.route('/reservas')
+    .get(reservasController.obtenerReservas)  // Asegúrate de que esta función esté bien definida en reservasController
+    .post(validarReserva, reservasController.crearReserva);  // Crear una reserva, usa el validador de la reserva
 
-router.route('/:id')
-    .get(validarId, reservasController.obtenerReserva);
-
-router.route('/:id/cancelar')
-    .patch(validarId, reservasController.cancelarReserva);
+router.route('/reservas/:id')
+    .get(validarId, reservasController.obtenerReserva)  // Obtener una reserva por ID
+    .patch(validarId, reservasController.cancelarReserva);  // Cancelar una reserva
 
 module.exports = router;

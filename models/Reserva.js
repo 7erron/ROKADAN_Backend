@@ -40,17 +40,17 @@ class Reserva {
     try {
       await client.query('BEGIN');
 
-      // Insertar reserva
+      // Insertar reserva con estado por defecto 'pendiente'
       const reservaQuery = `
-        INSERT INTO reservas (usuario_id, cabana_id, fecha_inicio, fecha_fin, adultos, ninos, total)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        INSERT INTO reservas (usuario_id, cabana_id, fecha_inicio, fecha_fin, adultos, ninos, total, estado)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, 'pendiente')
         RETURNING *
       `;
       const reservaValues = [usuario_id, cabana_id, fecha_inicio, fecha_fin, adultos, ninos, total];
       const { rows } = await client.query(reservaQuery, reservaValues);
       const nuevaReserva = rows[0];
 
-      // Insertar servicios de la reserva
+      // Insertar servicios asociados
       if (servicios.length > 0) {
         for (const servicioId of servicios) {
           await client.query(
