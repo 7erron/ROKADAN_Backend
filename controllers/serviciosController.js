@@ -9,7 +9,7 @@ const obtenerServicios = async (req, res, next) => {
       status: 'success',
       results: servicios.length,
       data: { servicios },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     next(new AppError('Error al obtener servicios', 500));
@@ -29,7 +29,7 @@ const obtenerServicio = async (req, res, next) => {
     res.status(200).json({
       status: 'success',
       data: { servicio },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     next(new AppError('Error al obtener el servicio', 500));
@@ -41,11 +41,11 @@ const crearServicio = async (req, res, next) => {
   try {
     const { nombre, descripcion, precio } = req.body;
     const nuevoServicio = await Servicio.create({ nombre, descripcion, precio });
-    
+
     res.status(201).json({
       status: 'success',
       data: { servicio: nuevoServicio },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     next(new AppError('Error al crear servicio', 500));
@@ -71,7 +71,7 @@ const actualizarServicio = async (req, res, next) => {
     res.status(200).json({
       status: 'success',
       data: { servicio },
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     next(new AppError('Error al actualizar servicio', 500));
@@ -92,7 +92,7 @@ const eliminarServicio = async (req, res, next) => {
     res.status(204).json({
       status: 'success',
       data: null,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
     next(new AppError('Error al eliminar servicio', 500));
@@ -104,5 +104,5 @@ module.exports = {
   obtenerServicio,
   crearServicio,
   actualizarServicio,
-  eliminarServicio
+  eliminarServicio,
 };
