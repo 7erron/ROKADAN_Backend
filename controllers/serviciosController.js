@@ -1,67 +1,103 @@
-const express = require('express');
-const router = express.Router();
 const { Servicio } = require('../models/Servicio');
-const { verificarToken, verificarRol } = require('../middlewares/auth');
+const AppError = require('../utils/appError');
 
-// Obtener todos los servicios disponibles (público o autenticado)
-router.get('/', async (req, res) => {
-    try {
-        const servicios = await Servicio.findAll();
-        res.json(servicios);
-    } catch (error) {
-        console.error('Error al obtener servicios:', error);
-        res.status(500).json({ message: 'Error al obtener servicios.' });
-    }
-});
+// Obtener todos los servicios
+const obtenerServicios = async (req, res, next) => {
+  try {
+    const servicios = await Servicio.findAll();
+    res.status(200).json({
+      status: 'success',
+      results: servicios.length,
+      data: { servicios },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    next(new AppError('Error al obtener servicios', 500));
+  }
+};
 
-// Crear un nuevo servicio (solo administrador)
-router.post('/', verificarToken, verificarRol('admin'), async (req, res) => {
+// Crear un nuevo servicio
+const crearServicio = async (req, res, next) => {
+  try {
     const { nombre, descripcion, precio } = req.body;
+    const nuevoServicio = await Servicio.create({ nombre, descripcion, precio });
+    
+    res.status(201).json({
+      status: 'success',
+      data: { servicio: nuevoServicio },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    next(new AppError('Error al crear servicio', 500));
+  }
+};
 
-    try {
-        const nuevoServicio = await Servicio.create({ nombre, descripcion, precio });
-        res.status(201).json(nuevoServicio);
-    } catch (error) {
-        console.error('Error al crear servicio:', error);
-        res.status(500).json({ message: 'Error al crear servicio.' });
+// Obtener un servicio específico
+const obtenerServicio = async (req, res, next) => {
+  try {
+    const servicio = await Servicio.findByPk(req.params.id);
+    
+    if (!servicio) {
+      return next(new AppError('Servicio no encontrado', 404));
     }
-});
 
-// Actualizar un servicio (solo administrador)
-router.put('/:id', verificarToken, verificarRol('admin'), async (req, res) => {
-    const { id } = req.params;
+    res.status(200).json({
+      status: 'success',
+      data: { servicio },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    next(new AppError('Error al obtener servicio', 500));
+  }
+};
+
+// Actualizar un servicio
+const actualizarServicio = async (req, res, next) => {
+  try {
     const { nombre, descripcion, precio } = req.body;
-
-    try {
-        const servicio = await Servicio.findByPk(id);
-        if (!servicio) {
-            return res.status(404).json({ message: 'Servicio no encontrado.' });
-        }
-
-        await servicio.update({ nombre, descripcion, precio });
-        res.json(servicio);
-    } catch (error) {
-        console.error('Error al actualizar servicio:', error);
-        res.status(500).json({ message: 'Error al actualizar servicio.' });
+    const servicio = await Servicio.findByPk(req.params.id);
+    
+    if (!servicio) {
+      return next(new AppError('Servicio no encontrado', 404));
     }
-});
 
-// Eliminar un servicio (solo administrador)
-router.delete('/:id', verificarToken, verificarRol('admin'), async (req, res) => {
-    const { id } = req.params;
+    await servicio.update({ nombre, descripcion, precio });
+    
+    res.status(200).json({
+      status: 'success',
+      data: { servicio },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    next(new AppError('Error al actualizar servicio', 500));
+  }
+};
 
-    try {
-        const servicio = await Servicio.findByPk(id);
-        if (!servicio) {
-            return res.status(404).json({ message: 'Servicio no encontrado.' });
-        }
-
-        await servicio.destroy();
-        res.json({ message: 'Servicio eliminado correctamente.' });
-    } catch (error) {
-        console.error('Error al eliminar servicio:', error);
-        res.status(500).json({ message: 'Error al eliminar servicio.' });
+// Eliminar un servicio
+const eliminarServicio = async (req, res, next) => {
+  try {
+    const servicio = await Servicio.findByPk(req.params.id);
+    
+    if (!servicio) {
+      return next(new AppError('Servicio no encontrado', 404));
     }
-});
 
-module.exports = router;
+    await servicio.destroy();
+    
+    res.status(204).json({
+      status: 'success',
+      data: null,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    next(new AppError('Error al eliminar servicio', 500));
+  }
+};
+
+module.exports = {
+  obtenerServicios,
+  crearServicio,
+  obtenerServicio,
+  actualizarServicio,
+  eliminarServicio
+};
