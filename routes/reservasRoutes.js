@@ -31,4 +31,6 @@ router.route('/:id')
 router.route('/:id/cancelar')
     .patch(validarId, reservasController.cancelarReserva);
 
+router.route('/servicios').get(serviciosController.obtenerServicios);
+
 module.exports = router;
