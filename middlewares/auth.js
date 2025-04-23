@@ -2,7 +2,8 @@ const { verifyToken } = require('../config/jwt');
 const Usuario = require('../models/Usuario');
 const AppError = require('../utils/appError');
 
-const auth = async (req, res, next) => {
+// Middleware para verificar el token
+const verificarToken = async (req, res, next) => {
   try {
     // 1) Obtener el token
     let token;
@@ -16,7 +17,7 @@ const auth = async (req, res, next) => {
 
     // 2) Verificar token
     const decoded = verifyToken(token);
-    
+
     // Debug: Verifica la estructura del token decodificado
     console.log('Token decodificado:', decoded);
 
@@ -41,15 +42,18 @@ const auth = async (req, res, next) => {
   }
 };
 
-const restrictToAdmin = (req, res, next) => {
-  // Asegúrate de usar req.usuario en lugar de req.user
-  if (!req.usuario?.es_admin) {
-    return next(new AppError('No tienes permiso para realizar esta acción.', 403));
-  }
-  next();
+// Middleware para verificar si el usuario es administrador
+const verificarRol = (rol) => {
+  return (req, res, next) => {
+    // Verificar si el usuario tiene el rol adecuado
+    if (rol === 'admin' && !req.usuario?.es_admin) {
+      return next(new AppError('No tienes permiso para realizar esta acción.', 403));
+    }
+    next();
+  };
 };
 
 module.exports = {
-  auth,
-  restrictToAdmin
+  verificarToken,
+  verificarRol
 };
