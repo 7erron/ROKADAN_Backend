@@ -1,4 +1,4 @@
-const { Servicio } = require('../models/Servicio');
+const Servicio = require('../models/Servicio');
 const AppError = require('../utils/appError');
 
 // Obtener todos los servicios
@@ -21,7 +21,7 @@ const obtenerServicios = async (req, res, next) => {
 const obtenerServicio = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const servicio = await Servicio.findByID(id);
+    const servicio = await Servicio.findById(id);
 
     if (!servicio) {
       return next(new AppError('Servicio no encontrado', 404));
@@ -33,6 +33,7 @@ const obtenerServicio = async (req, res, next) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
+    console.error('Error real al obtener servicio por ID:', error);
     next(new AppError('Error al obtener el servicio', 500));
   }
 };
@@ -49,6 +50,7 @@ const crearServicio = async (req, res, next) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
+    console.error('Error real al crear servicio:', error);
     next(new AppError('Error al crear servicio', 500));
   }
 };
@@ -57,24 +59,28 @@ const crearServicio = async (req, res, next) => {
 const actualizarServicio = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { nombre, descripcion, precio } = req.body;
+    const servicioExistente = await Servicio.findById(id);
 
-    const servicio = await Servicio.findById(id);
-    if (!servicio) {
+    if (!servicioExistente) {
       return next(new AppError('Servicio no encontrado', 404));
     }
 
-    servicio.nombre = nombre ?? servicio.nombre;
-    servicio.descripcion = descripcion ?? servicio.descripcion;
-    servicio.precio = precio ?? servicio.precio;
-    await servicio.save();
+    const { nombre, descripcion, precio, activo } = req.body;
+
+    const servicioActualizado = await Servicio.update(id, {
+      nombre: nombre ?? servicioExistente.nombre,
+      descripcion: descripcion ?? servicioExistente.descripcion,
+      precio: precio ?? servicioExistente.precio,
+      activo: activo ?? servicioExistente.activo,
+    });
 
     res.status(200).json({
       status: 'success',
-      data: { servicio },
+      data: { servicio: servicioActualizado },
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
+    console.error('Error real al actualizar servicio:', error);
     next(new AppError('Error al actualizar servicio', 500));
   }
 };
@@ -84,11 +90,12 @@ const eliminarServicio = async (req, res, next) => {
   try {
     const { id } = req.params;
     const servicio = await Servicio.findById(id);
+
     if (!servicio) {
       return next(new AppError('Servicio no encontrado', 404));
     }
 
-    await servicio.destroy();
+    await Servicio.delete(id);
 
     res.status(204).json({
       status: 'success',
@@ -96,6 +103,7 @@ const eliminarServicio = async (req, res, next) => {
       timestamp: new Date().toISOString(),
     });
   } catch (error) {
+    console.error('Error real al eliminar servicio:', error);
     next(new AppError('Error al eliminar servicio', 500));
   }
 };
