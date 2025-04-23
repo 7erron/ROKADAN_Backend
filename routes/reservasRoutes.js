@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const reservasController = require('../controllers/reservasController');
 const serviciosController = require('../controllers/serviciosController'); // Asegúrate de tener este controlador
+const Cabana = require('../models/Cabana'); // Asegúrate de importar el modelo Cabana
 const { verificarToken, verificarRol } = require('../middlewares/auth');
 const { validarReserva, validarId } = require('../middlewares/validators');
 
@@ -14,6 +15,7 @@ router.route('/cabanas').get(async (req, res) => {
         const cabanas = await Cabana.findAll(); // Asegúrate de tener este modelo
         res.json(cabanas);
     } catch (err) {
+        console.error(err);
         res.status(500).json({ message: 'Error al cargar cabañas' });
     }
 });
