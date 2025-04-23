@@ -21,7 +21,14 @@ router.route('/cabanas').get(async (req, res) => {
 });
 
 // Rutas para servicios adicionales
-router.route('/servicios').get(serviciosController.getServicios); // Asegúrate de tener este controlador
+router.route('/servicios').get((req, res) => {
+    // Asegúrate de que getServicios esté correctamente exportado desde serviciosController
+    if (typeof serviciosController.getServicios === 'function') {
+        serviciosController.getServicios(req, res);
+    } else {
+        res.status(500).json({ message: 'Error: getServicios no es una función' });
+    }
+});
 
 // Rutas para reservas
 router.route('/')
