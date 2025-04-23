@@ -20,9 +20,6 @@ router.route('/cabanas').get(async (req, res) => {
     }
 });
 
-// Rutas para servicios adicionales
-router.route('/servicios').get(serviciosController.obtenerServicios); // Uso de getServicios del controlador
-
 // Rutas para reservas
 router.route('/')
     .get(reservasController.obtenerReservas)
