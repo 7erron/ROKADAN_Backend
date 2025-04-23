@@ -34,5 +34,8 @@ const crearServicio = async (req, res, next) => {
 
 module.exports = {
   obtenerServicios,
-  crearServicio
+  crearServicio,
+  obtenerServicio,
+  actualizarServicio,
+  eliminarServicio
 };
