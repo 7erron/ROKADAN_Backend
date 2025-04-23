@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
-const { auth } = require('../middlewares/auth');
+const { auth, restrictToAdmin } = require('../middlewares/auth'); // Usamos 'auth' para verificar el token
 const { validarRegistro, validarLogin } = require('../middlewares/validators');
 
 // @desc    Registrar un nuevo usuario
@@ -18,5 +18,12 @@ router.post('/login', validarLogin, authController.login);
 // @route   GET /me
 // @access  Private
 router.get('/me', auth, authController.getMe);
+
+// @desc    Solo accesible para administradores
+// @route   GET /admin
+// @access  Private
+router.get('/admin', auth, restrictToAdmin, (req, res) => {
+  res.status(200).json({ message: 'Ruta solo accesible para administradores.' });
+});
 
 module.exports = router;
