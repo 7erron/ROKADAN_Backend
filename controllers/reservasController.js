@@ -158,19 +158,3 @@ exports.cancelarReserva = async (req, res) => {
     });
   }
 };
-
-// ✅ Ruta especial solo para administradores
-exports.funcionSoloParaAdmin = async (req, res) => {
-  try {
-    res.status(200).json({
-      status: 'success',
-      message: 'Accediste correctamente a la ruta protegida de administrador.'
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      status: 'error',
-      message: 'Error al acceder a la ruta de administrador.'
-    });
-  }
-};
