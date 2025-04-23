@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { Servicio } = require('../models');
+const { Servicio } = require('../models/Servicio');
 const { verificarToken, verificarRol } = require('../middlewares/auth');
 
 // Obtener todos los servicios disponibles (público o autenticado)
