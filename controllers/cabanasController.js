@@ -14,7 +14,7 @@ const obtenerCabanas = async (req, res, next) => {
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error(error); // Agregar para ver detalles del error en el backend
+    console.error('Error al obtener las cabañas:', error); // Agregado para ver detalles del error
     next(new AppError('Error al obtener las cabañas', 500));
   }
 };
@@ -22,18 +22,28 @@ const obtenerCabanas = async (req, res, next) => {
 // Controlador para obtener una cabaña específica
 const obtenerCabana = async (req, res, next) => {
   try {
-    const cabana = await Cabana.findByPk(req.params.id); 
+    const id = req.params.id;
+
+    // Verificar si el ID es válido
+    if (isNaN(id)) {
+      return next(new AppError('El ID debe ser un número', 400));
+    }
+
+    // Intentar obtener la cabaña por el ID
+    const cabana = await Cabana.findById(id); 
     
     if (!cabana) {
       return next(new AppError('No se encontró la cabaña con ese ID', 404));
     }
 
+    // Respuesta exitosa
     res.status(200).json({
       status: 'success',
       data: { cabana },
       timestamp: new Date().toISOString()
     });
   } catch (error) {
+    console.error('Error al obtener la cabaña:', error); // Loguear error
     next(new AppError('Error al obtener la cabaña', 500));
   }
 };
@@ -50,6 +60,7 @@ const obtenerCabanasDestacadas = async (req, res, next) => {
       timestamp: new Date().toISOString()
     });
   } catch (error) {
+    console.error('Error al obtener cabañas destacadas:', error); // Loguear error
     next(new AppError('Error al obtener cabañas destacadas', 500));
   }
 };
@@ -82,6 +93,7 @@ const obtenerCabanasDisponibles = async (req, res, next) => {
       timestamp: new Date().toISOString()
     });
   } catch (error) {
+    console.error('Error al buscar cabañas disponibles:', error); // Loguear error
     next(new AppError('Error al buscar cabañas disponibles', 500));
   }
 };
@@ -102,6 +114,7 @@ const crearCabana = async (req, res, next) => {
       timestamp: new Date().toISOString()
     });
   } catch (error) {
+    console.error('Error al crear la cabaña:', error); // Loguear error
     next(new AppError('Error al crear la cabaña', 500));
   }
 };
@@ -126,6 +139,7 @@ const actualizarCabana = async (req, res, next) => {
       timestamp: new Date().toISOString()
     });
   } catch (error) {
+    console.error('Error al actualizar la cabaña:', error); // Loguear error
     next(new AppError('Error al actualizar la cabaña', 500));
   }
 };
@@ -145,6 +159,7 @@ const eliminarCabana = async (req, res, next) => {
       timestamp: new Date().toISOString()
     });
   } catch (error) {
+    console.error('Error al eliminar la cabaña:', error); // Loguear error
     next(new AppError('Error al eliminar la cabaña', 500));
   }
 };
